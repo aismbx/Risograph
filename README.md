@@ -17,11 +17,21 @@ It's a single self-contained `index.html`: no build step, no dependencies, no se
 - **Start / Stop:** run or interrupt a print job.
 
 ### Design
+- Starts with a **blank page**.
+- **Undo / Redo** and **Clear** buttons at the top of the design panel (Clear can be undone).
 - Add **text** and **images**, then drag them to move them.
 - **Size** and **Turn** buttons. You can also pinch, or use the scroll wheel (hold Shift to rotate).
 - Text: 10 fonts, alignment, and edit (double-tap the text or press Edit).
 - Images print on drum 1 only, drum 2 only, or **Two Color**, which splits the photo across both inks.
 - Front/Back layering, Copy and Delete.
+- Text line **Spacing**.
+
+### Mask
+Select an image and press **Mask** to hide parts of it.
+- **Keep** adds visible areas; **Erase** removes them. If your first shape is Keep, everything outside it is hidden.
+- Tools: **Lasso**, **Box**, **Oval** and **Brush** (with adjustable size).
+- **Invert** flips the mask; **Ghost** shows the hidden parts faintly while you work; **Reset** removes the mask.
+- Masks move, resize and rotate with the image.
 
 ### Image import
 - Shows the original and a proof side by side.
@@ -31,23 +41,29 @@ It's a single self-contained `index.html`: no build step, no dependencies, no se
 
 ### Output tray
 - Printed copies slide into the tray and stack up.
-- Tap the stack to browse copies and zoom to full size.
+- Tap the stack to browse copies and zoom to full size. Use your keyboard's ← → keys (or swipe) to flip through them.
 - **Save PNG** exports a copy at 1275 × 1650 px (Letter size at 150 dpi). Clear Film copies export with a transparent background.
 
 ## Keyboard shortcuts
 
+Click **? Shortcuts** at the top of the screen (or press `?`) to see every shortcut. The main ones:
+
 | Where | Key | Action |
 |---|---|---|
-| Machine | `0`–`9` | Enter copies |
-| Machine | `Enter` | Start printing |
-| Machine | `Esc` | Clear copies / close viewer |
-| Design | Arrow keys | Move selection (Shift = bigger steps) |
-| Design | `[` / `]` | Rotate |
-| Design | `-` / `+` | Resize |
-| Design | `Enter` | Edit selected text |
-| Design | `Ctrl/Cmd + D` | Duplicate |
-| Design | `Delete` / `Backspace` | Delete selection |
-| Design | `Esc` | Deselect |
+| Machine | `0`–`9` / `Enter` | Enter copies / start printing |
+| Machine | `D` `I` `P` `F` `V` | Design, inks, paper, feed, view prints |
+| Machine | Arrow keys | Drum 2 registration |
+| Viewer | `←` `→` | Previous / next copy |
+| Viewer | `Home` `End` `Z` `S` `Esc` | First, last, zoom, save, close |
+| Design | `Ctrl/Cmd + Z`, `Shift + Ctrl/Cmd + Z` | Undo, redo |
+| Design | `T` / `I` | Add text / image |
+| Design | Arrow keys (`Shift` = bigger) | Move selection |
+| Design | `-` `+` / `[` `]` | Resize / rotate |
+| Design | `Ctrl/Cmd + D`, `Delete` | Duplicate, delete |
+| Design | `Shift + Ctrl/Cmd + Delete` | Clear page |
+| Design | `Ctrl/Cmd + Enter` | Run / print |
+| Mask | `M` `K` `E` `X` `G` | Mask mode, keep, erase, invert, ghost |
+| Mask | `L` `R` `O` `B`, `[` `]` | Lasso, box, oval, brush, brush size |
 
 ## Deploying to GitHub Pages
 
@@ -89,7 +105,7 @@ Then visit `http://localhost:8000`.
 ## Limitations
 
 - Cut out works best on plain or evenly coloured backgrounds. It won't separate a subject from a busy scene.
-- Designs aren't saved between sessions: reloading starts from the demo poster.
+- Designs aren't saved between sessions: reloading starts with a blank page.
 - Fonts load from Google Fonts, so text falls back to a system font when offline.
 - Ink colours are approximations of riso inks on screen, not exact matches.
 
