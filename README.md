@@ -10,6 +10,7 @@ It's a single self-contained `index.html`: no build step, no dependencies, no se
 - **Copies:** key in up to 999 on the keypad. **C** clears it.
 - **Drums:** choose inks for drum 1 and drum 2 from 30 riso-style inks.
 - **Paper:** 15 stocks, including Bright White, Natural, Fleck, Newsprint, Kraft, Fluo and Clear Film.
+- **Texture overlay:** a recycled-card paper texture is added to every print (and the design preview). Turn it on/off and set its strength at the bottom of the Paper picker. Each copy gets the texture flipped and shifted at random, so the grain differs from copy to copy. It isn't applied to Clear Film.
 - **Speed knob:** faster printing means more misregistration and more speckle.
 - **Density knob:** controls how heavily the ink is laid down.
 - **Registration arrows:** nudge drum 2 to fine-tune how the layers line up.
@@ -100,6 +101,7 @@ Then visit `http://localhost:8000`.
 
 - **Separation:** single-colour images are converted by darkness. Two-colour images are split by a least-squares fit in optical-density space against the two chosen inks.
 - **Printing:** each drum is screened with a rotated halftone (15° and 75°), then perturbed by low-frequency noise and roller banding, random dropouts and speckle. The drums are multiplied onto the paper colour, and each drum gets a small random offset and rotation scaled by the speed setting.
+- **Texture:** the two texture layers from the recycled-card PSD are embedded in `index.html` as JPEGs (about 900 KB). Like the PSD, the fibre texture is multiplied over the print and the highlight layer is screened on top at 50%.
 - **Cut out:** removes background pixels that are connected to the image edges and close to the median edge colour, then softens and crops the result.
 
 ## Limitations
