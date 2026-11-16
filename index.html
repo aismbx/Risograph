@@ -208,6 +208,22 @@ kbd{display:inline-block;min-width:20px;height:20px;padding:0 5px;border-radius:
 .texk input{flex:1;accent-color:#3d9f48}
 .texk b{width:36px;text-align:right;color:#ddd;font:700 11px "Space Mono",monospace}
 .texnote{margin-top:8px;font:500 10px Inter;color:#77736a}
+#drumDisp .dd{display:inline-flex;align-items:center;gap:6px;min-width:0}
+#drumDisp .nm{overflow:hidden;text-overflow:ellipsis}
+#drumDisp.three{flex-direction:column;align-items:stretch;justify-content:center;gap:2px;padding:0 8px;font-size:7.5px}
+#drumDisp.three .row{display:flex;gap:8px;align-items:center;min-width:0}
+#drumDisp.three .row .dd{flex:1}
+#drumDisp.three .pass{color:#888;font-weight:700;letter-spacing:.1em;flex:none}
+#drumDisp.three i{width:7px;height:7px}
+.drumslot{position:relative}
+.cylx{position:absolute;right:-4px;top:-6px;width:22px;height:22px;border-radius:50%;background:#f4f2ea;color:#222;font:700 14px/22px Inter;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+.addink{width:100%;height:38px;border-radius:8px;border:1.5px dashed #6a6762;color:#ddd;font:800 10px Inter;letter-spacing:.12em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:10px;margin-left:0}
+.addink small{font:600 9px Inter;letter-spacing:.06em;color:#8c8880;text-transform:none}
+.addink:hover{border-color:#aaa}
+.reglcd.tap{cursor:pointer;box-shadow:inset 0 1px 3px rgba(0,0,0,.3),0 0 0 1.5px #8fa06b}
+.key.span2{grid-column:span 2}
+.tseg{margin-top:8px}
+.tseg .sbtn{height:32px;font-size:9px}
 #toast{position:absolute;left:50%;top:22px;transform:translateX(-50%);background:#f4f2ea;color:#222;font:700 10px Inter;letter-spacing:.1em;text-transform:uppercase;padding:8px 14px;border-radius:20px;z-index:300;box-shadow:0 4px 14px rgba(0,0,0,.4);transition:opacity .3s;pointer-events:none;white-space:nowrap}
 </style>
 </head>
@@ -333,7 +349,7 @@ kbd{display:inline-block;min-width:20px;height:20px;padding:0 5px;border-radius:
           <p><kbd>C</kbd> / <kbd>⌫</kbd><span>Clear copies</span></p><p><kbd>D</kbd><span>Design</span></p>
           <p><kbd>I</kbd><span>Inks / drums</span></p><p><kbd>P</kbd><span>Paper</span></p>
           <p><kbd>F</kbd><span>Feed one proof</span></p><p><kbd>V</kbd><span>View prints</span></p>
-          <p><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd><span>Drum 2 registration</span></p></section>
+          <p><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd><span>Registration</span></p><p><kbd>R</kbd><span>Registration: drum 2 / ink 3</span></p></section>
         <section><h4>Print viewer</h4>
           <p><kbd>←</kbd> <kbd>→</kbd><span>Previous / next copy</span></p><p><kbd>Home</kbd> <kbd>End</kbd><span>First / last</span></p>
           <p><kbd>Z</kbd><span>Zoom</span></p><p><kbd>S</kbd><span>Save PNG</span></p><p><kbd>Esc</kbd><span>Close</span></p>
@@ -341,7 +357,7 @@ kbd{display:inline-block;min-width:20px;height:20px;padding:0 5px;border-radius:
         <section><h4>Design</h4>
           <p><kbd>⌘/Ctrl</kbd><kbd>Z</kbd><span>Undo</span></p><p><kbd>⇧</kbd><kbd>⌘/Ctrl</kbd><kbd>Z</kbd><span>Redo</span></p>
           <p><kbd>T</kbd> / <kbd>I</kbd><span>Add text / image</span></p><p><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd><span>Move (⇧ = 10×)</span></p>
-          <p><kbd>-</kbd> <kbd>+</kbd><span>Size</span></p><p><kbd>[</kbd> <kbd>]</kbd><span>Turn</span></p><p><kbd>,</kbd> <kbd>.</kbd><span>Darker / lighter (10 ink stops)</span></p>
+          <p><kbd>-</kbd> <kbd>+</kbd><span>Size</span></p><p><kbd>[</kbd> <kbd>]</kbd><span>Turn</span></p><p><kbd>,</kbd> <kbd>.</kbd><span>Darker / lighter (10 ink stops)</span></p><p><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><span>Print in ink 1, 2 or 3</span></p>
           <p><kbd>F</kbd><span>Front / back</span></p><p><kbd>⌘/Ctrl</kbd><kbd>D</kbd><span>Duplicate</span></p>
           <p><kbd>⌫</kbd><span>Delete selected</span></p><p><kbd>⇧</kbd><kbd>⌘/Ctrl</kbd><kbd>⌫</kbd><span>Clear page</span></p>
           <p><kbd>Enter</kbd><span>Edit text</span></p><p><kbd>⌘/Ctrl</kbd><kbd>Enter</kbd><span>Run / print</span></p>
@@ -402,7 +418,8 @@ const FONTS = [
 ];
 
 const S = {
-  ink:[36,19], paper:0, copies:0, fresh:true, speed:3, density:3, reg:{x:0,y:0},
+  ink:[36,19,62], ink3:false, paper:0, copies:0, fresh:true, speed:3, density:3,
+  regs:[null,{x:0,y:0},{x:0,y:0}], regD:1,   // registration offsets (mm) for drum 2 and pass-2 ink 3
   els:[], sel:null, view:'machine', printing:false, stop:false, tray:[], vi:0, activeDrum:0,
   tex:true, texK:1,
   maskMode:false, draft:null, mop:'keep', mtool:'lasso', brush:.06, ghost:true
@@ -436,6 +453,7 @@ function applyTexture(ctx, w, h, rng){
 const hex2rgb = h => { h=h.replace('#',''); return [0,2,4].map(i=>parseInt(h.substr(i,2),16)); };
 const inkHex = d => INKS[S.ink[d]][1];
 const inkName = d => INKS[S.ink[d]][0].replace('Fluorescent','Fluo');
+const nInks = () => S.ink3?3:2;
 const isOpaqueInk = d => INKS[S.ink[d]][1].toUpperCase()==='#FFFFFF';   // white ink covers instead of multiplying
 const TINT = el => el.tint==null?1:el.tint;
 const clamp = (v,a,b) => v<a?a:v>b?b:v;
@@ -528,8 +546,10 @@ function buildImage(el){
   } else el.srcC = el.orig;
   el.ar = el.srcC.height/el.srcC.width;
   const cs = separate(el.srcC, el.mode, el.gamma, el.inv);
-  el.dens = el.mode===0?[cs[0],null]: el.mode===1?[null,cs[0]]: cs;
+  el.dens = densFor(el.mode, cs);
 }
+// mode 0/1/3 = ink 1/2/3 only, mode 2 = two-colour split across inks 1 + 2
+function densFor(mode, cs){ return mode===0?[cs[0],null,null]: mode===1?[null,cs[0],null]: mode===3?[null,null,cs[0]]: [cs[0],cs[1],null]; }
 
 /* ---------------- composition ---------------- */
 const mctx = ctx2(mk(10,10));
@@ -611,7 +631,7 @@ function maskedDens(el,d){
 
 const maskCache = {};
 function masksFor(w,h){
-  const k=w+'x'+h; if(!maskCache[k]){ for(const key in maskCache) delete maskCache[key]; maskCache[k]=[mk(w,h),mk(w,h)].map(c=>ctx2(c,{})); }
+  const k=w+'x'+h; if(!maskCache[k]){ for(const key in maskCache) delete maskCache[key]; maskCache[k]=[mk(w,h),mk(w,h),mk(w,h)].map(c=>ctx2(c,{})); }
   return maskCache[k];
 }
 let checker;
@@ -628,7 +648,7 @@ function composite(target, scale, ghost){
   const tw=target.width, th=target.height, ms=masksFor(tw,th), t=ctx2(target,{});
   t.setTransform(1,0,0,1,0,0); t.globalCompositeOperation='source-over';
   paintPaper(t,tw,th);
-  for(let d=0;d<2;d++){
+  for(let d=0;d<nInks();d++){
     const m=ms[d]; drawMask(m,d,scale,null,ghost);
     m.globalCompositeOperation='source-in'; m.fillStyle=inkHex(d); m.fillRect(0,0,tw,th); m.globalCompositeOperation='source-over';
     if(isOpaqueInk(d)){ t.globalCompositeOperation='source-over'; t.globalAlpha=.85; } else t.globalCompositeOperation='multiply';
@@ -837,11 +857,11 @@ function renderDesignPanel(){
       b=[
         {act:'drum0',icon:chip(0,el.drum===0),t:inkName(0),led:el.drum===0},
         {act:'drum1',icon:chip(1,el.drum===1),t:inkName(1),led:el.drum===1},
-        {act:'align',icon:svg(el.align==='left'?'align':el.align==='center'?'alignC':'alignR'),t:'Align'},
+        S.ink3?{act:'drum2',icon:chip(2,el.drum===2),t:inkName(2),led:el.drum===2}:{act:'run',icon:svg('play'),t:'Run'},
         {act:'edit',icon:svg('pencil'),t:'Edit'},
         {act:'fontN',icon:'<span class="n" style="font:400 calc(var(--key-h)*.34) \''+FONTS[el.font][1]+'\'">Aa</span>',t:'Font'},
         {act:'turnL',icon:svg('turnL'),t:'Turn',rep:1},{act:'turnR',icon:svg('turnR'),t:'Turn',rep:1},
-        {act:'spacing',icon:svg('spacing'),t:'Spacing'},
+        {act:'align',icon:svg(el.align==='left'?'align':el.align==='center'?'alignC':'alignR'),t:'Align'},
         {act:'sizeD',icon:svg('minus'),t:'Size',rep:1},{act:'sizeU',icon:svg('plus'),t:'Size',rep:1},
         {act:'darker',icon:svg('moon'),t:'Darker',rep:1,dis:TINT(el)>=1},{act:'lighter',icon:svg('sun'),t:'Lighter',rep:1,dis:TINT(el)<=.1},
       ];
@@ -849,8 +869,9 @@ function renderDesignPanel(){
       b=[
         {act:'mode0',icon:chip(0,img&&el.mode===0),t:inkName(0),led:img?el.mode===0:undefined,dis:none},
         {act:'mode1',icon:chip(1,img&&el.mode===1),t:inkName(1),led:img?el.mode===1:undefined,dis:none},
+        ...(S.ink3?[{act:'mode3',icon:chip(2,img&&el.mode===3),t:inkName(2),led:img?el.mode===3:undefined,dis:none}]:[]),
         {act:'mode2',icon:chip(0,img&&el.mode===2,true),t:'Two color',led:img?el.mode===2:undefined,dis:none},
-        {act:'run',icon:svg('play'),t:'Run',dis:!S.els.length},
+        ...(S.ink3?[]:[{act:'run',icon:svg('play'),t:'Run',dis:!S.els.length}]),
         {act:'turnL',icon:svg('turnL'),t:'Turn',rep:1,dis:none},{act:'turnR',icon:svg('turnR'),t:'Turn',rep:1,dis:none},
         {act:'sizeD',icon:svg('minus'),t:'Size',rep:1,dis:none},{act:'sizeU',icon:svg('plus'),t:'Size',rep:1,dis:none},
         {act:'cut',icon:svg(img&&el.cut?'uncut':'scissors'),t:img&&el.cut?'Uncut':'Cut out',dis:none},
@@ -875,7 +896,7 @@ function updateLCD(){
   }
   else if(el.type==='image'){
     a=`${Math.round(el.w/W*100)}% wide  ${Math.round(el.rot)}°`;
-    b=(el.mode===2?'Two color':inkName(el.mode)+' only')+(el.cut?' · cut out':'')+((el.masks&&el.masks.length)||el.minv?' · mask':'')+` · ink ${Math.round(TINT(el)*100)}%`;
+    b=(el.mode===2?'Two color':inkName(el.mode===3?2:el.mode)+' only')+(el.cut?' · cut out':'')+((el.masks&&el.masks.length)||el.minv?' · mask':'')+` · ink ${Math.round(TINT(el)*100)}%`;
   } else {
     a=`${Math.round(el.size*0.72)} pt  ${Math.round(el.rot)}°  ${el.align==='center'?'centered':el.align}`;
     b=`${FONTS[el.font][0]} · ink ${Math.round(TINT(el)*100)}%`;
@@ -883,7 +904,7 @@ function updateLCD(){
   $('#l1').textContent=a; $('#l2').textContent=b;
 }
 
-const MUT={delete:1,drum0:1,drum1:1,mode0:1,mode1:1,mode2:1,align:1,fontP:1,fontN:1,sizeD:1,sizeU:1,turnL:1,turnR:1,layer:1,cut:1,lighter:1,darker:1,copy:1,spacing:1,clear:1,mInv:1,mReset:1};
+const MUT={delete:1,drum0:1,drum1:1,drum2:1,mode0:1,mode1:1,mode2:1,mode3:1,align:1,fontP:1,fontN:1,sizeD:1,sizeU:1,turnL:1,turnR:1,layer:1,cut:1,lighter:1,darker:1,copy:1,spacing:1,clear:1,mInv:1,mReset:1};
 function act(a, step=1){
   const el=S.sel;
   if(MUT[a]){
@@ -896,8 +917,8 @@ function act(a, step=1){
     case 'redo': redo(); return;
     case 'clear': S.els=[]; select(null); toast('Page cleared · undo to restore'); return;
     case 'delete': S.els.splice(S.els.indexOf(el),1); select(null); return;
-    case 'drum0': case 'drum1': el.drum=+a[4]; break;
-    case 'mode0': case 'mode1': case 'mode2': el.mode=+a[4]; buildImage(el); break;
+    case 'drum0': case 'drum1': case 'drum2': el.drum=+a[4]; break;
+    case 'mode0': case 'mode1': case 'mode2': case 'mode3': el.mode=+a[4]; buildImage(el); break;
     case 'align': el.align = {left:'center',center:'right',right:'left'}[el.align]; break;
     case 'spacing': el.lh = el.lh<0.95?1.02: el.lh<1.1?1.22: 0.88; break;
     case 'fontP': el.font=(el.font+FONTS.length-1)%FONTS.length; loadFont(el).then(renderDesign); break;
@@ -959,19 +980,39 @@ function openSheet(html, onClose){
 function openDrums(){
   if(sheetEl && sheetEl.dataset.kind==='drum'){ closeSheet(); return; }
   const draw=()=>{
-    const cyl=d=>{ const c=inkHex(d); return `<div class="drumslot"><div class="num">${d+1}</div><div class="cyl ${S.activeDrum===d?'on':''}" data-slot="${d}" style="background:linear-gradient(${c}cc,${c} 30%,${c} 65%,#0005),${c}"><span>${inkName(d)}</span></div></div>`; };
-    s.querySelector('.sbody').innerHTML = `<div class="shead">Drums · tap a slot, then an ink · ${INKS.length} standard riso inks</div>${cyl(0)}${cyl(1)}
-      <div class="inkgrid">${INKS.map((k,i)=>`<button class="inkchip" data-ink="${i}" style="--c:${k[1]}"><span>${k[0]}</span>${S.ink[0]===i?'<b>1</b>':S.ink[1]===i?'<b>2</b>':''}</button>`).join('')}</div>`;
+    if(S.activeDrum>=nInks()) S.activeDrum=0;
+    const cyl=d=>{ const c=inkHex(d); return `<div class="drumslot"><div class="num">${d+1}</div><div class="cyl ${S.activeDrum===d?'on':''}" data-slot="${d}" style="background:linear-gradient(${c}cc,${c} 30%,${c} 65%,#0005),${c}"><span>${inkName(d)}</span></div>${d===2?'<button class="cylx" data-ink3off title="Remove third colour">×</button>':''}</div>`; };
+    s.querySelector('.sbody').innerHTML = `<div class="shead">Pass 1 · two drums · tap a slot, then an ink</div>${cyl(0)}${cyl(1)}
+      <div class="shead" style="margin-top:12px">Pass 2 · optional third colour</div>
+      ${S.ink3?cyl(2):'<button class="addink" data-ink3on>+ Add a third colour <small>printed on a second pass</small></button>'}
+      <div class="shead" style="margin-top:14px">${INKS.length} standard riso inks</div>
+      <div class="inkgrid">${INKS.map((k,i)=>{ const on=[0,1,2].filter(d=>d<nInks()&&S.ink[d]===i).map(d=>d+1).join(''); return `<button class="inkchip" data-ink="${i}" style="--c:${k[1]}"><span>${k[0]}</span>${on?`<b>${on}</b>`:''}</button>`; }).join('')}</div>`;
   };
   const s=openSheet(''); s.dataset.kind='drum'; draw(); $('#drumCaret').textContent='▾';
   s.addEventListener('click',e=>{
+    if(e.target.closest('[data-ink3on]')){ S.ink3=true; S.activeDrum=2; inksChanged(); draw(); return; }
+    if(e.target.closest('[data-ink3off]')){ setInk3(false); draw(); return; }
     const sl=e.target.closest('[data-slot]'); if(sl){ S.activeDrum=+sl.dataset.slot; draw(); return; }
     const ik=e.target.closest('[data-ink]'); if(ik){ S.ink[S.activeDrum]=+ik.dataset.ink; inksChanged(); draw(); }
   });
 }
+// Turning the third colour off moves anything printed in ink 3 onto ink 2, so nothing disappears.
+function setInk3(on){
+  if(!on){
+    let moved=0;
+    for(const el of S.els){
+      if(el.type==='text' && el.drum===2){ el.drum=1; moved++; }
+      if(el.type==='image' && el.mode===3){ el.mode=1; buildImage(el); moved++; }
+    }
+    if(moved) toast(`${moved} item${moved>1?'s':''} moved to ink 2`);
+    if(S.regD===2) S.regD=1;
+  }
+  S.ink3=on; inksChanged(); renderReg();
+}
 function inksChanged(){
   for(const el of S.els) if(el.type==='image' && el.mode===2) buildImage(el);
-  renderDrumDisp(); updateThumbSoon(); if(S.view==='design'){ renderDesignPanel(); renderDesign(); }
+  renderDrumDisp(); renderReg(); updateThumbSoon(); if(S.view==='design'){ renderDesignPanel(); renderDesign(); }
+  if(S.view==='import' && imp){ if(imp.mode===3 && !S.ink3) imp.mode=1; renderImportPanel(); renderImport(); }
 }
 function openPapers(){
   if(sheetEl && sheetEl.dataset.kind==='paper'){ closeSheet(); return; }
@@ -994,10 +1035,12 @@ function openPapers(){
 }
 function openTextEdit(el, noCommit){
   if(!noCommit) commit();
-  const s=openSheet(`<div class="edit"><div class="shead">Edit text · new line = enter</div><textarea id="ta" spellcheck="false"></textarea><div class="sbtns"><button class="sbtn" id="taCancel">CANCEL</button><button class="sbtn go" id="taDone">DONE</button></div></div>`);
+  const s=openSheet(`<div class="edit"><div class="shead">Edit text · new line = enter · line spacing below</div><textarea id="ta" spellcheck="false"></textarea><div class="sbtns tseg" id="taSp"><button class="sbtn" data-lh="0.88">TIGHT</button><button class="sbtn" data-lh="1.02">NORMAL</button><button class="sbtn" data-lh="1.22">LOOSE</button></div><div class="sbtns"><button class="sbtn" id="taCancel">CANCEL</button><button class="sbtn go" id="taDone">DONE</button></div></div>`);
   const ta=s.querySelector('#ta'); ta.value=el.text; ta.style.fontFamily=`"${FONTS[el.font][1]}"`; const orig=el.text;
   setTimeout(()=>{ ta.focus(); ta.select(); },30);
   ta.oninput=()=>{ el.text=ta.value||' '; renderDesign(); };
+  const markSp=()=>s.querySelectorAll('[data-lh]').forEach(b=>b.classList.toggle('go',Math.abs(+b.dataset.lh-el.lh)<.05));
+  markSp(); s.querySelector('#taSp').onclick=e=>{ const b=e.target.closest('[data-lh]'); if(!b) return; el.lh=+b.dataset.lh; markSp(); renderDesign(); ta.focus(); };
   s.querySelector('#taDone').onclick=closeSheet;
   s.querySelector('#taCancel').onclick=()=>{ el.text=orig; closeSheet(); if(!noCommit){ HIST.u.pop(); updUR(); } renderDesign(); };
 }
@@ -1014,15 +1057,22 @@ function renderSeg(n){
   $('#seg').innerHTML=`<svg viewBox="-3 -1 84 40"><g transform="skewX(-6)" style="filter:drop-shadow(0 0 2px #ff2d1f88)">${out}</g></svg>`;
 }
 function renderDrumDisp(){
-  $('#drumDisp').innerHTML=`<span class="n">1</span><i style="background:${inkHex(0)}"></i>${inkName(0)}<span class="sep"></span><span class="n">2</span><i style="background:${inkHex(1)}"></i>${inkName(1)}`;
+  const it=d=>`<span class="dd"><span class="n">${d+1}</span><i style="background:${inkHex(d)}"></i><span class="nm">${inkName(d)}</span></span>`;
+  $('#drumDisp').classList.toggle('three',S.ink3);
+  $('#drumDisp').innerHTML = S.ink3 ? `<span class="row">${it(0)}${it(1)}</span><span class="row"><span class="pass">Pass 2</span>${it(2)}</span>` : `${it(0)}<span class="sep"></span>${it(1)}`;
   $('#pk1dot') && 0;
 }
 function renderPaperIcon(){ const p=PAPERS[S.paper]; $('#paperIcon').style.fill=p[1]||'#e4e4e4'; }
 function renderReg(){
   const f=v=>(v>0?'+':v<0?'-':' ')+Math.abs(v).toFixed(1);
-  $('#regLcd').innerHTML=`<span class="big">2</span><span>↕${f(S.reg.y)}<br>↔${f(S.reg.x)}</span>`;
+  if(!S.ink3) S.regD=1;
+  const r=S.regs[S.regD];
+  $('#regLcd').innerHTML=`<span class="big">${S.regD+1}</span><span>↕${f(r.y)}<br>↔${f(r.x)}</span>`;
+  $('#regLcd').classList.toggle('tap',S.ink3); $('#regLcd').title=S.ink3?'Tap to switch between drum 2 and ink 3':'';
 }
-function nudgeReg(s){ const [dx,dy]=s.split(',').map(Number); S.reg.x=clamp(Math.round((S.reg.x+dx*.5)*10)/10,-9.5,9.5); S.reg.y=clamp(Math.round((S.reg.y+dy*.5)*10)/10,-9.5,9.5); renderReg(); }
+function nudgeReg(s){ const [dx,dy]=s.split(',').map(Number), r=S.regs[S.regD]; r.x=clamp(Math.round((r.x+dx*.5)*10)/10,-9.5,9.5); r.y=clamp(Math.round((r.y+dy*.5)*10)/10,-9.5,9.5); renderReg(); }
+function switchReg(){ if(!S.ink3) return; S.regD=S.regD===1?2:1; renderReg(); toast(`Registration: ${S.regD===1?'drum 2':'ink 3 (pass 2)'}`); }
+$('#regLcd').addEventListener('click',switchReg);
 
 document.querySelectorAll('#keypad [data-d]').forEach(b=>b.addEventListener('click',()=>{
   if(S.printing) return; const d=+b.dataset.d;
@@ -1073,12 +1123,39 @@ const COS=new Float32Array(1024); for(let i=0;i<1024;i++) COS[i]=Math.cos(i/1024
 function lowFreq(rng, PW, PH){
   // two smooth noise fields (R = drum1, G = drum2) + roller banding baked in
   const g=38, gw=Math.ceil(PW/g)+2, gh=Math.ceil(PH/g)+2, sm=mk(gw,gh), x=ctx2(sm), id=x.createImageData(gw,gh);
-  const band=[0,1].map(()=>{ const a=[]; let v=rng(); for(let j=0;j<gh;j++){ v=clamp(v+(rng()-.5)*.35,0,1); a.push(v); } return a; });
+  const band=[0,1,2].map(()=>{ const a=[]; let v=rng(); for(let j=0;j<gh;j++){ v=clamp(v+(rng()-.5)*.35,0,1); a.push(v); } return a; });
   for(let j=0;j<gh;j++) for(let i=0;i<gw;i++){ const p=(j*gw+i)*4;
-    id.data[p]=255*(.55*rng()+.45*band[0][j]); id.data[p+1]=255*(.55*rng()+.45*band[1][j]); id.data[p+3]=255; }
+    id.data[p]=255*(.55*rng()+.45*band[0][j]); id.data[p+1]=255*(.55*rng()+.45*band[1][j]); id.data[p+2]=255*(.55*rng()+.45*band[2][j]); id.data[p+3]=255; }
   x.putImageData(id,0,0);
   const big=mk(PW,PH), bx=ctx2(big); bx.imageSmoothingEnabled=true; bx.imageSmoothingQuality='high'; bx.drawImage(sm,-g,-g,gw*g,gh*g);
   return bx.getImageData(0,0,PW,PH).data;
+}
+
+// Second pass: ink 3 printed over the finished first pass, with its own screen angle (45°).
+function printPass2(O, A, LF, PW, PH, rng, gain, sf, clear){
+  const K=hex2rgb(inkHex(2)).map(v=>1-v/255), WH=isOpaqueInk(2), OP=0.94;
+  const cell=4.6, an=45*Math.PI/180, ca=Math.cos(an), sa=Math.sin(an), ox=rng()*50, oy=rng()*50;
+  let hs=((rng()*4294967295)>>>0)||7;
+  for(let y=0;y<PH;y++){
+    let u=(y*sa)/cell+ox, v=(y*ca)/cell+oy; const du=ca/cell, dv=-sa/cell;
+    for(let x=0;x<PW;x++,u+=du,v+=dv){
+      const i=(y*PW+x)<<2;
+      hs^=hs<<13; hs^=hs>>>17; hs^=hs<<5;
+      const a2=A[i+3]; if(!a2) continue;
+      const h=hs>>>0, lf=LF[i+2]/255, dn=a2/255*gain*(.86+.28*lf);
+      let t=.5-.25*(COS[((u-Math.floor(u))*1024)|0]+COS[((v-Math.floor(v))*1024)|0]);
+      t=.1+.8*t+(((h&255)/255)-.5)*.16;
+      let c=(dn-t)/.16+.5; c=c<0?0:c>1?1:c;
+      if(((h>>>8)&1023)<6+12*(1-lf)) c*=.3;
+      c*=OP*(.9+.1*lf); if(c<=0) continue;
+      if(clear){
+        const a=O[i+3]/255, A2=1-(1-a)*(1-c);
+        for(let k=0;k<3;k++){ const bw=O[i+k]*a+255*(1-a), nw=WH? bw+(255-bw)*c*.85 : bw*(1-c*K[k]); O[i+k]=(nw-255*(1-A2))/A2; }
+        O[i+3]=A2*255;
+      } else if(WH){ const a=c*.85; O[i]+=(255-O[i])*a; O[i+1]+=(255-O[i+1])*a; O[i+2]+=(255-O[i+2])*a; }
+      else { O[i]*=1-c*K[0]; O[i+1]*=1-c*K[1]; O[i+2]*=1-c*K[2]; }
+    }
+  }
 }
 
 function renderPrint(seed){
@@ -1086,8 +1163,11 @@ function renderPrint(seed){
   const sf=[0.12,0.25,0.45,0.75,1.15][S.speed-1];
   const gain=[0.8,0.9,1.0,1.1,1.22][S.density-1]*(1+(rng()-.5)*.08);
   const ms=masksFor(PW,PH), M=[];
-  for(let d=0;d<2;d++){
-    const j={ dx:((d?S.reg.x:0) + (rng()-.5)*2*sf*(d?1:.45))*MM, dy:((d?S.reg.y:0) + (rng()-.5)*2*sf*(d?1:.45))*MM, r:(rng()-.5)*0.006*sf };
+  // pass 1 = drums 1 + 2; pass 2 (optional) = ink 3, fed through again so it drifts more
+  const spread=[.45,1,1.7];
+  for(let d=0;d<nInks();d++){
+    const rg=S.regs[d]||{x:0,y:0};
+    const j={ dx:(rg.x + (rng()-.5)*2*sf*spread[d])*MM, dy:(rg.y + (rng()-.5)*2*sf*spread[d])*MM, r:(rng()-.5)*(d===2?0.01:0.006)*sf };
     drawMask(ms[d],d,PS,j); M.push(ms[d].getImageData(0,0,PW,PH).data);
   }
   // paper
@@ -1143,6 +1223,7 @@ function renderPrint(seed){
       }
     }
   }
+  if(M[2]) printPass2(O, M[2], LF, PW, PH, rng, gain, sf, clear);
   px.putImageData(out,0,0);
   applyTexture(px,PW,PH,rng);
   return paper;
@@ -1199,7 +1280,7 @@ $('#vimg').onclick=()=>{ if(Date.now()-swiped<300) return; $('#vwrap').classList
 $('#vClear').onclick=()=>{ S.tray.forEach(t=>URL.revokeObjectURL(t.url)); S.tray=[]; $('#stack').innerHTML=''; $('#trayHint').classList.remove('hidden'); $('#viewer').classList.add('hidden'); toast('Tray cleared'); };
 $('#vSave').onclick=async()=>{
   const t=S.tray[S.vi]; if(!t) return;
-  const name=`riso-${inkName(0)}-${inkName(1)}-${S.vi+1}.png`.toLowerCase().replace(/\s+/g,'-');
+  const name=`riso-${[0,1,2].slice(0,nInks()).map(inkName).join('-')}-${S.vi+1}.png`.toLowerCase().replace(/\s+/g,'-');
   await saveFile(t.blob,name);
 };
 async function saveFile(blob,name){
@@ -1228,26 +1309,30 @@ async function openImport(file){
 function renderImport(){
   const o=$('#impOrig'); o.width=imp.small.width; o.height=imp.small.height; ctx2(o,{}).drawImage(imp.small,0,0);
   let src=imp.small; if(imp.cut) src=cutout(imp.small,imp.tol);
-  const cs=separate(src,imp.mode,imp.gamma,imp.inv), dens=imp.mode===0?[cs[0],null]:imp.mode===1?[null,cs[0]]:cs;
+  const cs=separate(src,imp.mode,imp.gamma,imp.inv), dens=densFor(imp.mode,cs);
   const p=$('#impProof'); p.width=imp.small.width; p.height=imp.small.height;
   const x=ctx2(p,{}); x.globalCompositeOperation='source-over'; paintPaper(x,p.width,p.height);
   const ox=(p.width-src.width)/2, oy=(p.height-src.height)/2;
-  for(let d=0;d<2;d++){ if(!dens[d]) continue; const m=mk(src.width,src.height), mx=ctx2(m,{}); mx.globalAlpha=imp.tint; mx.drawImage(dens[d],0,0); mx.globalAlpha=1; mx.globalCompositeOperation='source-in'; mx.fillStyle=inkHex(d); mx.fillRect(0,0,m.width,m.height); x.globalCompositeOperation='multiply'; x.drawImage(m,ox,oy); }
+  for(let d=0;d<3;d++){ if(!dens[d]) continue; const m=mk(src.width,src.height), mx=ctx2(m,{}); mx.globalAlpha=imp.tint; mx.drawImage(dens[d],0,0); mx.globalAlpha=1; mx.globalCompositeOperation='source-in'; mx.fillStyle=inkHex(d); mx.fillRect(0,0,m.width,m.height); x.globalCompositeOperation='multiply'; x.drawImage(m,ox,oy); }
   x.globalCompositeOperation='source-over';
 }
 function renderImportPanel(){
   const m=imp.mode;
-  $('#pk1').innerHTML=`<div>${m===2?'Two color':inkName(m)+' only'}</div><div>${imp.inv?'inverted':'normal'}</div>`;
+  $('#pk1').innerHTML=`<div>${m===2?'Two color':inkName(m===3?2:m)+' only'}</div><div>${imp.inv?'inverted':'normal'}</div>`;
   $('#pk2').innerHTML=`<div>${imp.cut?'Cut out · tol '+imp.tol:'No cut'}</div><div>ink ${Math.round(imp.tint*100)}%</div>`;
   $('#pk1dot').style.cssText=`display:inline-block;width:7px;height:7px;border-radius:50%;background:${inkHex(0)}`;
   $('#pk2dot').style.cssText=`display:inline-block;width:7px;height:7px;border-radius:50%;background:${inkHex(1)}`;
+  $('#pk1dot').style.background=S.ink3?`linear-gradient(90deg,${inkHex(0)} 33%,${inkHex(1)} 33% 66%,${inkHex(2)} 66%)`:inkHex(0); $('#pk1dot').style.width=S.ink3?'18px':'7px';
   const b=[
     {act:'m0',icon:chip(0,m===0),t:inkName(0)+' only',led:m===0},{act:'m1',icon:chip(1,m===1),t:inkName(1)+' only',led:m===1},
-    {act:'m2',icon:chip(0,m===2,true),t:'Two color',led:m===2},{act:'inv',icon:svg('invert'),t:'Invert',led:imp.inv},
+    ...(S.ink3?[{act:'m3',icon:chip(2,m===3),t:inkName(2)+' only',led:m===3}]:[]),
+    {act:'m2',icon:chip(0,m===2,true),t:'Two color',led:m===2},
+    ...(S.ink3?[]:[{act:'inv',icon:svg('invert'),t:'Invert',led:imp.inv}]),
     {act:'dark',icon:svg('moon'),t:'Darker',dis:imp.tint>=1},{act:'light',icon:svg('sun'),t:'Lighter',dis:imp.tint<=.1},
     {act:'tolD',icon:svg('minus'),t:'Cut tol',dis:!imp.cut},{act:'tolU',icon:svg('plus'),t:'Cut tol',dis:!imp.cut},
-    {act:'cut',icon:svg('scissors'),t:'Cut out',led:imp.cut},{act:'cancel',icon:svg('x'),t:'Cancel'},
-    {act:'uncut',icon:svg('uncut'),t:'Uncut',dis:!imp.cut},{act:'done',icon:svg('check'),t:'Done',cls:'green'},
+    {act:'cut',icon:svg(imp.cut?'uncut':'scissors'),t:imp.cut?'Uncut':'Cut out',led:imp.cut},
+    ...(S.ink3?[{act:'inv',icon:svg('invert'),t:'Invert',led:imp.inv}]:[]),
+    {act:'cancel',icon:svg('x'),t:'Cancel'},{act:'done',icon:svg('check'),t:'Done',cls:'green'+(S.ink3?'':' span2')},
   ];
   $('#igrid').innerHTML=b.map(btn).join('');
 }
@@ -1266,8 +1351,7 @@ $('#importPanel').addEventListener('click',e=>{
   if(a==='dark') imp.tint=Math.min(10,Math.round(imp.tint*10)+1)/10;
   if(a==='tolD') imp.tol=clamp(imp.tol-5,5,120);
   if(a==='tolU') imp.tol=clamp(imp.tol+5,5,120);
-  if(a==='cut') imp.cut=true;
-  if(a==='uncut') imp.cut=false;
+  if(a==='cut') imp.cut=!imp.cut;
   renderImportPanel(); renderImport();
 });
 
@@ -1327,6 +1411,7 @@ document.addEventListener('keydown',e=>{
     else if(k==='ArrowDown') mv(0,st);
     else if(k==='['){ act('turnL'); } else if(k===']'){ act('turnR'); }
     else if(k===','){ act('darker'); } else if(k==='.'){ act('lighter'); }
+    else if(/^[1-3]$/.test(k) && !mod){ const d=+k-1; if(d<nInks()) act(el.type==='text'?'drum'+d:'mode'+(d===2?3:d)); }
     else if(k==='-'){ act('sizeD'); } else if(k==='='||k==='+'){ act('sizeU'); }
     else if(mod && kl==='d'){ e.preventDefault(); act('copy'); }
     else if(kl==='f' && !mod){ act('layer'); }
@@ -1344,6 +1429,7 @@ document.addEventListener('keydown',e=>{
     else if(kl==='p') openPapers();
     else if(kl==='i') openDrums();
     else if(kl==='f') $('#bFeed').click();
+    else if(kl==='r') switchReg();
     else if(kl==='v' && S.tray.length){ S.vi=S.tray.length-1; openViewer(); }
     else if(k==='ArrowLeft'||k==='ArrowRight'||k==='ArrowUp'||k==='ArrowDown'){ e.preventDefault(); nudgeReg({ArrowLeft:'-1,0',ArrowRight:'1,0',ArrowUp:'0,-1',ArrowDown:'0,1'}[k]); }
   } else if(S.view==='import'){

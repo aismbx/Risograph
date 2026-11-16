@@ -9,11 +9,12 @@ It's a single self-contained `index.html`: no build step, no dependencies, no se
 ### Machine
 - **Copies:** key in up to 999 on the keypad. **C** clears it.
 - **Drums:** choose inks for drum 1 and drum 2 from the 79 standard Risograph inks (from the RizzCraft colour guide), including fluorescents, metallics and white. White ink covers the paper rather than tinting it, so it shows up on coloured stocks.
+- **Third colour (optional):** in the Drum picker, **+ Add a third colour** adds ink 3, printed on a second pass the way riso shops print 3-colour jobs. Pass 2 has its own halftone angle and drifts a little more than pass 1. Removing the third colour moves anything in ink 3 onto ink 2.
 - **Paper:** 15 stocks, including Bright White, Natural, Fleck, Newsprint, Kraft, Fluo and Clear Film.
 - **Texture overlay:** a recycled-card paper texture is added to every print (and the design preview). Turn it on/off and set its strength at the bottom of the Paper picker. Each copy gets the texture flipped and shifted at random, so the grain differs from copy to copy. It isn't applied to Clear Film.
 - **Speed knob:** faster printing means more misregistration and more speckle.
 - **Density knob:** controls how heavily the ink is laid down.
-- **Registration arrows:** nudge drum 2 to fine-tune how the layers line up.
+- **Registration arrows:** nudge drum 2 to fine-tune how the layers line up. With a third colour, tap the registration display (or press `R`) to switch to adjusting ink 3.
 - **Feed:** prints a single proof copy.
 - **Start / Stop:** run or interrupt a print job.
 
@@ -23,8 +24,8 @@ It's a single self-contained `index.html`: no build step, no dependencies, no se
 - Add **text** and **images**, then drag them to move them.
 - **Size** and **Turn** buttons. You can also pinch, or use the scroll wheel (hold Shift to rotate).
 - **Ink stops:** **Darker** / **Lighter** step images and text through 10 ink levels: 100%, 90% … 10%, like a riso tint chart.
-- Text: 10 fonts, alignment, spacing, and edit (double-tap the text or press Edit).
-- Images print on drum 1 only, drum 2 only, or **Two Color**, which splits the photo across both inks.
+- Text: 10 fonts, alignment, and edit (double-tap the text or press Edit). Line spacing (tight / normal / loose) is in the Edit sheet.
+- Images print in one ink (1, 2 or 3), or **Two Color**, which splits the photo across inks 1 and 2. Text can use any of the inks.
 - Front/Back layering, Copy and Delete.
 - Text line **Spacing**.
 
@@ -54,7 +55,7 @@ Click **? Shortcuts** at the top of the screen (or press `?`) to see every short
 |---|---|---|
 | Machine | `0`–`9` / `Enter` | Enter copies / start printing |
 | Machine | `D` `I` `P` `F` `V` | Design, inks, paper, feed, view prints |
-| Machine | Arrow keys | Drum 2 registration |
+| Machine | Arrow keys / `R` | Registration / switch between drum 2 and ink 3 |
 | Viewer | `←` `→` | Previous / next copy |
 | Viewer | `Home` `End` `Z` `S` `Esc` | First, last, zoom, save, close |
 | Design | `Ctrl/Cmd + Z`, `Shift + Ctrl/Cmd + Z` | Undo, redo |
@@ -62,6 +63,7 @@ Click **? Shortcuts** at the top of the screen (or press `?`) to see every short
 | Design | Arrow keys (`Shift` = bigger) | Move selection |
 | Design | `-` `+` / `[` `]` | Resize / rotate |
 | Design | `,` / `.` | Darker / lighter ink stop |
+| Design | `1` `2` `3` | Print selection in ink 1, 2 or 3 |
 | Design | `Ctrl/Cmd + D`, `Delete` | Duplicate, delete |
 | Design | `Shift + Ctrl/Cmd + Delete` | Clear page |
 | Design | `Ctrl/Cmd + Enter` | Run / print |
