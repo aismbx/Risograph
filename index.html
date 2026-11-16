@@ -163,6 +163,7 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
   .sheet .sbody{width:100%;max-width:640px;margin:0 auto;padding:28px 22px}
   .inkchip{height:38px}.inkchip span{font-size:9px}
   .papergrid{grid-template-columns:repeat(5,1fr)}
+  .inkgrid{grid-template-columns:repeat(5,1fr)}
   #designView{padding:10px}
   #importView{padding:5% 8%}
   .key:hover{filter:brightness(1.04)}
@@ -340,7 +341,7 @@ kbd{display:inline-block;min-width:20px;height:20px;padding:0 5px;border-radius:
         <section><h4>Design</h4>
           <p><kbd>⌘/Ctrl</kbd><kbd>Z</kbd><span>Undo</span></p><p><kbd>⇧</kbd><kbd>⌘/Ctrl</kbd><kbd>Z</kbd><span>Redo</span></p>
           <p><kbd>T</kbd> / <kbd>I</kbd><span>Add text / image</span></p><p><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd><span>Move (⇧ = 10×)</span></p>
-          <p><kbd>-</kbd> <kbd>+</kbd><span>Size</span></p><p><kbd>[</kbd> <kbd>]</kbd><span>Turn</span></p>
+          <p><kbd>-</kbd> <kbd>+</kbd><span>Size</span></p><p><kbd>[</kbd> <kbd>]</kbd><span>Turn</span></p><p><kbd>,</kbd> <kbd>.</kbd><span>Darker / lighter (10 ink stops)</span></p>
           <p><kbd>F</kbd><span>Front / back</span></p><p><kbd>⌘/Ctrl</kbd><kbd>D</kbd><span>Duplicate</span></p>
           <p><kbd>⌫</kbd><span>Delete selected</span></p><p><kbd>⇧</kbd><kbd>⌘/Ctrl</kbd><kbd>⌫</kbd><span>Clear page</span></p>
           <p><kbd>Enter</kbd><span>Edit text</span></p><p><kbd>⌘/Ctrl</kbd><kbd>Enter</kbd><span>Run / print</span></p>
@@ -370,13 +371,24 @@ const W = 850, H = 1100;            // page units (8.5 × 11 in, 100 units per i
 const PS = 1.5;                     // print scale → 1275 × 1650 px (150 dpi)
 const MM = 100 / 25.4;              // page units per mm
 
+// The 79 standard Risograph inks, in the order of the RizzCraft colour guide.
 const INKS = [
-  ['Black','#1c1c1c'],['Burgundy','#914E72'],['Brown','#925F52'],['Bright Red','#F15060'],['Red','#FF665E'],
-  ['Bubble Gum','#F984CA'],['Fluo Pink','#FF48B0'],['Fluo Orange','#FF7477'],['Orange','#FF6C2F'],['Sunflower','#FFB511'],
-  ['Yellow','#FFE800'],['Fluo Yellow','#F4F000'],['Flat Gold','#BB8B41'],['Metallic Gold','#AC936E'],['Fluo Green','#44D62C'],
-  ['Green','#00A95C'],['Hunter Green','#407060'],['Mint','#82D8D5'],['Teal','#00838A'],['Aqua','#5EC8E5'],
-  ['Cornflower','#62A8E5'],['Blue','#0078BF'],['Medium Blue','#3255A4'],['Federal Blue','#3D5588'],['Lake','#235BA8'],
-  ['Purple','#765BA7'],['Violet','#9D7AD2'],['Coral','#FF8E91'],['Midnight','#435060'],['Light Gray','#88898A']
+  ['Black','#000000'], ['White','#FFFFFF'], ['Granite','#A5AAA8'], ['Charcoal','#70747C'], ['Light Gray','#88898A'],
+  ['Gray','#928D88'], ['Mist','#B8C7C4'], ['Smoky Teal','#5F8289'], ['Teal','#00838A'], ['Light Teal','#009DA5'],
+  ['Lagoon','#588084'], ['Sea Foam','#62C2B1'], ['Mint','#82D8D5'], ['Aqua','#5EC8E5'], ['Cornflower','#3255A4'],
+  ['Sky Blue','#4982CF'], ['Midnight','#435060'], ['Steel','#375E77'], ['Sea Blue','#0074A2'], ['Blue','#0078BF'],
+  ['Lake','#235BA8'], ['Medium Blue','#62A8E5'], ['Riso Federal Blue','#3D5588'], ['Indigo','#484D7A'], ['Purple','#765BA7'],
+  ['Plum','#845991'], ['Grape','#6E5F81'], ['Raisin','#775D7A'], ['Violet','#9D7AD2'], ['Orchid','#BB76CF'],
+  ['Wine','#914E72'], ['Burgundy','#914E72'], ['Maroon','#9E4C6E'], ['Dark Mauve','#BD8CA6'], ['Light Mauve','#E6B5C9'],
+  ['Bubble Gum','#F984CA'], ['Fluorescent Pink','#FF48B0'], ['Fluorescent Red','#FE4E67'], ['Fluorescent Orange','#FF7477'], ['Marine Red','#D2515E'],
+  ['Scarlet','#F65058'], ['Bright Red','#F15060'], ['Brick','#A75154'], ['Cranberry','#C24F5D'], ['Raspberry Red','#B44D67'],
+  ['Tomato','#D2515E'], ['Crimson','#E45D50'], ['Red','#FF665E'], ['Coral','#FF8E91'], ['Bisque','#F2CDCF'],
+  ['Riso Federal','#8E595A'], ['Brown','#925F52'], ['Copper','#BD6439'], ['Bright Gold','#BA8032'], ['Flat Gold','#BB8B41'],
+  ['Metallic Gold','#AC936E'], ['Orange','#FF6C2F'], ['Pumpkin','#FF6F4C'], ['Paprika','#EE7F4B'], ['Apricot','#F6A04D'],
+  ['Melon','#FFAE3B'], ['Sunflower','#FFB511'], ['Yellow','#FFE800'], ['Fluorescent Yellow','#F6FE07'], ['Light Lime','#E3ED55'],
+  ['Kelly Green','#67B346'], ['Fluorescent Green','#47D630'], ['Green','#00A95C'], ['Ivy','#169B62'], ['Emerald','#19975D'],
+  ['Grass','#397E58'], ['Turquoise','#00AA93'], ['Pine','#237E74'], ['Hunter Green','#407060'], ['Spruce','#4A635D'],
+  ['Forest','#516E5A'], ['Slate','#5E695E'], ['Moss','#68724D'], ['Bright Olive Green','#B49F29']
 ];
 const PAPERS = [
   ['Bright White','#f7f6f1'],['Natural','#f2ead6'],['Fleck','#eee8da','fleck'],['Newsprint','#dcd7ca'],
@@ -390,7 +402,7 @@ const FONTS = [
 ];
 
 const S = {
-  ink:[6,22], paper:0, copies:0, fresh:true, speed:3, density:3, reg:{x:0,y:0},
+  ink:[36,19], paper:0, copies:0, fresh:true, speed:3, density:3, reg:{x:0,y:0},
   els:[], sel:null, view:'machine', printing:false, stop:false, tray:[], vi:0, activeDrum:0,
   tex:true, texK:1,
   maskMode:false, draft:null, mop:'keep', mtool:'lasso', brush:.06, ghost:true
@@ -423,7 +435,9 @@ function applyTexture(ctx, w, h, rng){
 /* ---------------- helpers ---------------- */
 const hex2rgb = h => { h=h.replace('#',''); return [0,2,4].map(i=>parseInt(h.substr(i,2),16)); };
 const inkHex = d => INKS[S.ink[d]][1];
-const inkName = d => INKS[S.ink[d]][0];
+const inkName = d => INKS[S.ink[d]][0].replace('Fluorescent','Fluo');
+const isOpaqueInk = d => INKS[S.ink[d]][1].toUpperCase()==='#FFFFFF';   // white ink covers instead of multiplying
+const TINT = el => el.tint==null?1:el.tint;
 const clamp = (v,a,b) => v<a?a:v>b?b:v;
 const mk = (w,h) => { const c=document.createElement('canvas'); c.width=Math.max(1,w|0); c.height=Math.max(1,h|0); return c; };
 const ctx2 = (c, opts) => c.getContext('2d', opts||{willReadFrequently:true});
@@ -545,9 +559,9 @@ function drawMask(ctx, d, scale, jit, ghost){
       const c=maskedDens(el,d);
       ctx.save(); ctx.translate(el.x,el.y); ctx.rotate(el.rot*Math.PI/180);
       const w=el.w, h=el.w*el.ar;
-      if(ghost===el){ ctx.globalAlpha=.22; ctx.drawImage(raw,-w/2,-h/2,w,h); ctx.globalAlpha=1; }
-      ctx.drawImage(c,-w/2,-h/2,w,h); ctx.restore();
-    } else if(el.drum===d) drawText(ctx, el);
+      if(ghost===el){ ctx.globalAlpha=.22*TINT(el); ctx.drawImage(raw,-w/2,-h/2,w,h); }
+      ctx.globalAlpha=TINT(el); ctx.drawImage(c,-w/2,-h/2,w,h); ctx.globalAlpha=1; ctx.restore();
+    } else if(el.drum===d){ ctx.globalAlpha=TINT(el); drawText(ctx, el); ctx.globalAlpha=1; }
   }
   ctx.setTransform(1,0,0,1,0,0);
 }
@@ -617,7 +631,8 @@ function composite(target, scale, ghost){
   for(let d=0;d<2;d++){
     const m=ms[d]; drawMask(m,d,scale,null,ghost);
     m.globalCompositeOperation='source-in'; m.fillStyle=inkHex(d); m.fillRect(0,0,tw,th); m.globalCompositeOperation='source-over';
-    t.globalCompositeOperation='multiply'; t.drawImage(m.canvas,0,0);
+    if(isOpaqueInk(d)){ t.globalCompositeOperation='source-over'; t.globalAlpha=.85; } else t.globalCompositeOperation='multiply';
+    t.drawImage(m.canvas,0,0); t.globalAlpha=1;
   }
   t.globalCompositeOperation='source-over';
   applyTexture(t,tw,th,null);
@@ -823,11 +838,12 @@ function renderDesignPanel(){
         {act:'drum0',icon:chip(0,el.drum===0),t:inkName(0),led:el.drum===0},
         {act:'drum1',icon:chip(1,el.drum===1),t:inkName(1),led:el.drum===1},
         {act:'align',icon:svg(el.align==='left'?'align':el.align==='center'?'alignC':'alignR'),t:'Align'},
-        {act:'run',icon:svg('play'),t:'Run'},
-        {act:'fontP',icon:svg('left'),t:'Font'},{act:'fontN',icon:svg('right'),t:'Font'},
-        {act:'sizeD',icon:svg('minus'),t:'Size',rep:1},{act:'sizeU',icon:svg('plus'),t:'Size',rep:1},
+        {act:'edit',icon:svg('pencil'),t:'Edit'},
+        {act:'fontN',icon:'<span class="n" style="font:400 calc(var(--key-h)*.34) \''+FONTS[el.font][1]+'\'">Aa</span>',t:'Font'},
         {act:'turnL',icon:svg('turnL'),t:'Turn',rep:1},{act:'turnR',icon:svg('turnR'),t:'Turn',rep:1},
-        {act:'edit',icon:svg('pencil'),t:'Edit'},{act:'spacing',icon:svg('spacing'),t:'Spacing'},
+        {act:'spacing',icon:svg('spacing'),t:'Spacing'},
+        {act:'sizeD',icon:svg('minus'),t:'Size',rep:1},{act:'sizeU',icon:svg('plus'),t:'Size',rep:1},
+        {act:'darker',icon:svg('moon'),t:'Darker',rep:1,dis:TINT(el)>=1},{act:'lighter',icon:svg('sun'),t:'Lighter',rep:1,dis:TINT(el)<=.1},
       ];
     } else {
       b=[
@@ -839,7 +855,7 @@ function renderDesignPanel(){
         {act:'sizeD',icon:svg('minus'),t:'Size',rep:1,dis:none},{act:'sizeU',icon:svg('plus'),t:'Size',rep:1,dis:none},
         {act:'cut',icon:svg(img&&el.cut?'uncut':'scissors'),t:img&&el.cut?'Uncut':'Cut out',dis:none},
         {act:'mask',icon:svg('mask'),t:'Mask',dis:none,led:img?!!((el.masks&&el.masks.length)||el.minv):undefined},
-        {act:'lighter',icon:svg('sun'),t:'Lighter',rep:1,dis:none},{act:'darker',icon:svg('moon'),t:'Darker',rep:1,dis:none},
+        {act:'darker',icon:svg('moon'),t:'Darker',rep:1,dis:none||TINT(el)>=1},{act:'lighter',icon:svg('sun'),t:'Lighter',rep:1,dis:none||TINT(el)<=.1},
       ];
     }
     b.push({act:'addImg',icon:svg('image'),t:'+ Image'},{act:'addText',icon:svg('text'),t:'+ Text'},{act:'copy',icon:svg('copy'),t:'Copy',dis:none},{act:'panel',icon:svg('panel'),t:'Panel'});
@@ -859,10 +875,10 @@ function updateLCD(){
   }
   else if(el.type==='image'){
     a=`${Math.round(el.w/W*100)}% wide  ${Math.round(el.rot)}°`;
-    b=(el.mode===2?'Two color':inkName(el.mode)+' only')+(el.cut?' · cut out':'')+((el.masks&&el.masks.length)||el.minv?' · mask':'')+(el.gamma!==1?` · tone ${el.gamma<1?'+':'-'}${Math.abs(Math.round(Math.log(el.gamma)/Math.log(1.18)))}`:'');
+    b=(el.mode===2?'Two color':inkName(el.mode)+' only')+(el.cut?' · cut out':'')+((el.masks&&el.masks.length)||el.minv?' · mask':'')+` · ink ${Math.round(TINT(el)*100)}%`;
   } else {
     a=`${Math.round(el.size*0.72)} pt  ${Math.round(el.rot)}°  ${el.align==='center'?'centered':el.align}`;
-    b=FONTS[el.font][0];
+    b=`${FONTS[el.font][0]} · ink ${Math.round(TINT(el)*100)}%`;
   }
   $('#l1').textContent=a; $('#l2').textContent=b;
 }
@@ -893,8 +909,9 @@ function act(a, step=1){
     case 'edit': if(el&&el.type==='text') openTextEdit(el); return;
     case 'layer': { const i=S.els.indexOf(el); S.els.splice(i,1); if(i===S.els.length) S.els.unshift(el); else S.els.push(el); break; }
     case 'cut': el.cut=!el.cut; showBusy(true); setTimeout(()=>{ buildImage(el); showBusy(false); renderDesignPanel(); renderDesign(); },20); return;
-    case 'lighter': el.gamma=clamp(el.gamma*1.18,0.3,4); buildImage(el); break;
-    case 'darker': el.gamma=clamp(el.gamma/1.18,0.3,4); buildImage(el); break;
+    // 10 ink stops: 100%, 90% … 10%
+    case 'lighter': el.tint=Math.max(1,Math.round(TINT(el)*10)-1)/10; break;
+    case 'darker': el.tint=Math.min(10,Math.round(TINT(el)*10)+1)/10; break;
     case 'mask': if(!el||el.type!=='image') return; S.maskMode=!S.maskMode; S.draft=null; if(S.maskMode && !(el.masks&&el.masks.length)) toast('Draw on the image to mask it'); break;
     case 'mKeep': S.mop='keep'; break;
     case 'mErase': S.mop='erase'; break;
@@ -943,7 +960,7 @@ function openDrums(){
   if(sheetEl && sheetEl.dataset.kind==='drum'){ closeSheet(); return; }
   const draw=()=>{
     const cyl=d=>{ const c=inkHex(d); return `<div class="drumslot"><div class="num">${d+1}</div><div class="cyl ${S.activeDrum===d?'on':''}" data-slot="${d}" style="background:linear-gradient(${c}cc,${c} 30%,${c} 65%,#0005),${c}"><span>${inkName(d)}</span></div></div>`; };
-    s.querySelector('.sbody').innerHTML = `<div class="shead">Drums · tap a slot, then an ink</div>${cyl(0)}${cyl(1)}
+    s.querySelector('.sbody').innerHTML = `<div class="shead">Drums · tap a slot, then an ink · ${INKS.length} standard riso inks</div>${cyl(0)}${cyl(1)}
       <div class="inkgrid">${INKS.map((k,i)=>`<button class="inkchip" data-ink="${i}" style="--c:${k[1]}"><span>${k[0]}</span>${S.ink[0]===i?'<b>1</b>':S.ink[1]===i?'<b>2</b>':''}</button>`).join('')}</div>`;
   };
   const s=openSheet(''); s.dataset.kind='drum'; draw(); $('#drumCaret').textContent='▾';
@@ -1081,6 +1098,7 @@ function renderPrint(seed){
   const out=px.getImageData(0,0,PW,PH), O=out.data;
   const LF=lowFreq(rng,PW,PH);
   const K=[0,1].map(d=>hex2rgb(inkHex(d)).map(v=>1-v/255));
+  const WH0=isOpaqueInk(0), WH1=isOpaqueInk(1);
   const cell=4.6, ang=[15,75].map(a=>a*Math.PI/180), ca=ang.map(Math.cos), sa=ang.map(Math.sin);
   const ox=[rng()*50,rng()*50], oy=[rng()*50,rng()*50];
   let hs=(seed*2654435761)>>>0||1;
@@ -1116,7 +1134,12 @@ function renderPrint(seed){
         O[i]=(255*m0*m1-255*(1-A))/A; O[i+1]=(255*n0*n1-255*(1-A))/A; O[i+2]=(255*b0*b1-255*(1-A))/A; O[i+3]=A*255;
       } else {
         const f=1-(((h>>>24)&255)/255)*.03;
-        O[i]=O[i]*f*m0*m1; O[i+1]=O[i+1]*f*n0*n1; O[i+2]=O[i+2]*f*b0*b1;
+        if(WH0||WH1){
+          let r=O[i]*f, g=O[i+1]*f, bl=O[i+2]*f;
+          if(WH0){ const a=c0*.85; r+=(255-r)*a; g+=(255-g)*a; bl+=(255-bl)*a; } else { r*=m0; g*=n0; bl*=b0; }
+          if(WH1){ const a=c1*.85; r+=(255-r)*a; g+=(255-g)*a; bl+=(255-bl)*a; } else { r*=m1; g*=n1; bl*=b1; }
+          O[i]=r; O[i+1]=g; O[i+2]=bl;
+        } else { O[i]=O[i]*f*m0*m1; O[i+1]=O[i+1]*f*n0*n1; O[i+2]=O[i+2]*f*b0*b1; }
       }
     }
   }
@@ -1199,7 +1222,7 @@ async function openImport(file){
   try{ img=await createImageBitmap(file); }
   catch(_){ img=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=URL.createObjectURL(file); }); }
   const full=fromImage(img,1100), small=fromImage(img,460);
-  imp={full,small,mode:0,cut:false,tol:30,gamma:1,inv:false};
+  imp={full,small,mode:0,cut:false,tol:30,gamma:1,inv:false,tint:1};
   setView('import'); renderImportPanel(); renderImport();
 }
 function renderImport(){
@@ -1209,19 +1232,19 @@ function renderImport(){
   const p=$('#impProof'); p.width=imp.small.width; p.height=imp.small.height;
   const x=ctx2(p,{}); x.globalCompositeOperation='source-over'; paintPaper(x,p.width,p.height);
   const ox=(p.width-src.width)/2, oy=(p.height-src.height)/2;
-  for(let d=0;d<2;d++){ if(!dens[d]) continue; const m=mk(src.width,src.height), mx=ctx2(m,{}); mx.drawImage(dens[d],0,0); mx.globalCompositeOperation='source-in'; mx.fillStyle=inkHex(d); mx.fillRect(0,0,m.width,m.height); x.globalCompositeOperation='multiply'; x.drawImage(m,ox,oy); }
+  for(let d=0;d<2;d++){ if(!dens[d]) continue; const m=mk(src.width,src.height), mx=ctx2(m,{}); mx.globalAlpha=imp.tint; mx.drawImage(dens[d],0,0); mx.globalAlpha=1; mx.globalCompositeOperation='source-in'; mx.fillStyle=inkHex(d); mx.fillRect(0,0,m.width,m.height); x.globalCompositeOperation='multiply'; x.drawImage(m,ox,oy); }
   x.globalCompositeOperation='source-over';
 }
 function renderImportPanel(){
   const m=imp.mode;
   $('#pk1').innerHTML=`<div>${m===2?'Two color':inkName(m)+' only'}</div><div>${imp.inv?'inverted':'normal'}</div>`;
-  $('#pk2').innerHTML=`<div>${imp.cut?'Cut out · tol '+imp.tol:'No cut'}</div><div>tone ${imp.gamma===1?'0':(imp.gamma>1?'+':'-')+Math.abs(Math.round(Math.log(imp.gamma)/Math.log(1.18)))}</div>`;
+  $('#pk2').innerHTML=`<div>${imp.cut?'Cut out · tol '+imp.tol:'No cut'}</div><div>ink ${Math.round(imp.tint*100)}%</div>`;
   $('#pk1dot').style.cssText=`display:inline-block;width:7px;height:7px;border-radius:50%;background:${inkHex(0)}`;
   $('#pk2dot').style.cssText=`display:inline-block;width:7px;height:7px;border-radius:50%;background:${inkHex(1)}`;
   const b=[
     {act:'m0',icon:chip(0,m===0),t:inkName(0)+' only',led:m===0},{act:'m1',icon:chip(1,m===1),t:inkName(1)+' only',led:m===1},
     {act:'m2',icon:chip(0,m===2,true),t:'Two color',led:m===2},{act:'inv',icon:svg('invert'),t:'Invert',led:imp.inv},
-    {act:'light',icon:svg('sun'),t:'Lighter'},{act:'dark',icon:svg('moon'),t:'Darker'},
+    {act:'dark',icon:svg('moon'),t:'Darker',dis:imp.tint>=1},{act:'light',icon:svg('sun'),t:'Lighter',dis:imp.tint<=.1},
     {act:'tolD',icon:svg('minus'),t:'Cut tol',dis:!imp.cut},{act:'tolU',icon:svg('plus'),t:'Cut tol',dis:!imp.cut},
     {act:'cut',icon:svg('scissors'),t:'Cut out',led:imp.cut},{act:'cancel',icon:svg('x'),t:'Cancel'},
     {act:'uncut',icon:svg('uncut'),t:'Uncut',dis:!imp.cut},{act:'done',icon:svg('check'),t:'Done',cls:'green'},
@@ -1233,14 +1256,14 @@ $('#importPanel').addEventListener('click',e=>{
   const b=e.target.closest('[data-act]'); if(!b) return; const a=b.dataset.act;
   if(a==='cancel'){ imp=null; setView('design'); return; }
   if(a==='done'){
-    const el={type:'image',orig:imp.full,mode:imp.mode,cut:imp.cut,tol:imp.tol,gamma:imp.gamma,inv:imp.inv,x:W/2,y:H/2,rot:0,w:W*0.7};
+    const el={type:'image',orig:imp.full,mode:imp.mode,cut:imp.cut,tol:imp.tol,gamma:1,tint:imp.tint,inv:imp.inv,x:W/2,y:H/2,rot:0,w:W*0.7};
     buildImage(el); if(el.w*el.ar>H*.8) el.w=H*.8/el.ar;
     commit(); S.els.push(el); imp=null; setView('design'); select(el); return;
   }
   if(a[0]==='m' && a.length===2) imp.mode=+a[1];
   if(a==='inv') imp.inv=!imp.inv;
-  if(a==='light') imp.gamma=clamp(imp.gamma*1.18,.3,4);
-  if(a==='dark') imp.gamma=clamp(imp.gamma/1.18,.3,4);
+  if(a==='light') imp.tint=Math.max(1,Math.round(imp.tint*10)-1)/10;
+  if(a==='dark') imp.tint=Math.min(10,Math.round(imp.tint*10)+1)/10;
   if(a==='tolD') imp.tol=clamp(imp.tol-5,5,120);
   if(a==='tolU') imp.tol=clamp(imp.tol+5,5,120);
   if(a==='cut') imp.cut=true;
@@ -1303,6 +1326,7 @@ document.addEventListener('keydown',e=>{
     else if(k==='ArrowUp') mv(0,-st);
     else if(k==='ArrowDown') mv(0,st);
     else if(k==='['){ act('turnL'); } else if(k===']'){ act('turnR'); }
+    else if(k===','){ act('darker'); } else if(k==='.'){ act('lighter'); }
     else if(k==='-'){ act('sizeD'); } else if(k==='='||k==='+'){ act('sizeU'); }
     else if(mod && kl==='d'){ e.preventDefault(); act('copy'); }
     else if(kl==='f' && !mod){ act('layer'); }
@@ -1324,6 +1348,7 @@ document.addEventListener('keydown',e=>{
     else if(k==='ArrowLeft'||k==='ArrowRight'||k==='ArrowUp'||k==='ArrowDown'){ e.preventDefault(); nudgeReg({ArrowLeft:'-1,0',ArrowRight:'1,0',ArrowUp:'0,-1',ArrowDown:'0,1'}[k]); }
   } else if(S.view==='import'){
     if(k==='Enter'){ e.preventDefault(); document.querySelector('#igrid [data-act=done]').click(); }
+    else if(k===','||k==='.'){ const b=document.querySelector(`#igrid [data-act=${k===','?'dark':'light'}]`); if(b&&!b.disabled) b.click(); }
     else if(k==='Escape') document.querySelector('#igrid [data-act=cancel]').click();
   }
 });

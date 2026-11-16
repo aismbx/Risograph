@@ -8,7 +8,7 @@ It's a single self-contained `index.html`: no build step, no dependencies, no se
 
 ### Machine
 - **Copies:** key in up to 999 on the keypad. **C** clears it.
-- **Drums:** choose inks for drum 1 and drum 2 from 30 riso-style inks.
+- **Drums:** choose inks for drum 1 and drum 2 from the 79 standard Risograph inks (from the RizzCraft colour guide), including fluorescents, metallics and white. White ink covers the paper rather than tinting it, so it shows up on coloured stocks.
 - **Paper:** 15 stocks, including Bright White, Natural, Fleck, Newsprint, Kraft, Fluo and Clear Film.
 - **Texture overlay:** a recycled-card paper texture is added to every print (and the design preview). Turn it on/off and set its strength at the bottom of the Paper picker. Each copy gets the texture flipped and shifted at random, so the grain differs from copy to copy. It isn't applied to Clear Film.
 - **Speed knob:** faster printing means more misregistration and more speckle.
@@ -22,7 +22,8 @@ It's a single self-contained `index.html`: no build step, no dependencies, no se
 - **Undo / Redo** and **Clear** buttons at the top of the design panel (Clear can be undone).
 - Add **text** and **images**, then drag them to move them.
 - **Size** and **Turn** buttons. You can also pinch, or use the scroll wheel (hold Shift to rotate).
-- Text: 10 fonts, alignment, and edit (double-tap the text or press Edit).
+- **Ink stops:** **Darker** / **Lighter** step images and text through 10 ink levels: 100%, 90% … 10%, like a riso tint chart.
+- Text: 10 fonts, alignment, spacing, and edit (double-tap the text or press Edit).
 - Images print on drum 1 only, drum 2 only, or **Two Color**, which splits the photo across both inks.
 - Front/Back layering, Copy and Delete.
 - Text line **Spacing**.
@@ -37,7 +38,7 @@ Select an image and press **Mask** to hide parts of it.
 ### Image import
 - Shows the original and a proof side by side.
 - **Cut out** removes a plain background, with an adjustable tolerance.
-- Lighter / Darker / Invert.
+- Darker / Lighter (10 ink stops) / Invert.
 - You can also add images by drag and drop or by pasting.
 
 ### Output tray
@@ -60,6 +61,7 @@ Click **? Shortcuts** at the top of the screen (or press `?`) to see every short
 | Design | `T` / `I` | Add text / image |
 | Design | Arrow keys (`Shift` = bigger) | Move selection |
 | Design | `-` `+` / `[` `]` | Resize / rotate |
+| Design | `,` / `.` | Darker / lighter ink stop |
 | Design | `Ctrl/Cmd + D`, `Delete` | Duplicate, delete |
 | Design | `Shift + Ctrl/Cmd + Delete` | Clear page |
 | Design | `Ctrl/Cmd + Enter` | Run / print |
@@ -109,7 +111,7 @@ Then visit `http://localhost:8000`.
 - Cut out works best on plain or evenly coloured backgrounds. It won't separate a subject from a busy scene.
 - Designs aren't saved between sessions: reloading starts with a blank page.
 - Fonts load from Google Fonts, so text falls back to a system font when offline.
-- Ink colours are approximations of riso inks on screen, not exact matches.
+- Ink colours are the screen values from the RizzCraft colour guide; real prints will vary.
 
 ## License
 
