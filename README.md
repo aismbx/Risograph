@@ -26,7 +26,8 @@ It's a single self-contained `index.html`: no build step, no dependencies, no se
 - **Ink stops:** **Darker** / **Lighter** step images and text through 10 ink levels: 100%, 90% … 10%, like a riso tint chart.
 - Text: 10 fonts, alignment, and edit (double-tap the text or press Edit). Line spacing (tight / normal / loose) is in the Edit sheet.
 - Images print in one ink (1, 2 or 3), or **Two Color**, which splits the photo across inks 1 and 2. Text can use any of the inks.
-- Front/Back layering, Copy and Delete.
+- Front/Back layering, Copy (duplicates the selected item) and Delete.
+- **Paste** button: imports an image you've copied in another app (your browser may ask permission the first time). `Ctrl/Cmd + V` does the same.
 - Text line **Spacing**.
 
 ### Mask
@@ -64,6 +65,7 @@ Click **? Shortcuts** at the top of the screen (or press `?`) to see every short
 | Design | `-` `+` / `[` `]` | Resize / rotate |
 | Design | `,` / `.` | Darker / lighter ink stop |
 | Design | `1` `2` `3` | Print selection in ink 1, 2 or 3 |
+| Design | `Ctrl/Cmd + V` | Paste an image |
 | Design | `Ctrl/Cmd + D`, `Delete` | Duplicate, delete |
 | Design | `Shift + Ctrl/Cmd + Delete` | Clear page |
 | Design | `Ctrl/Cmd + Enter` | Run / print |

@@ -224,6 +224,7 @@ kbd{display:inline-block;min-width:20px;height:20px;padding:0 5px;border-radius:
 .key.span2{grid-column:span 2}
 .tseg{margin-top:8px}
 .tseg .sbtn{height:32px;font-size:9px}
+.key.col3{grid-column:3}
 #toast{position:absolute;left:50%;top:22px;transform:translateX(-50%);background:#f4f2ea;color:#222;font:700 10px Inter;letter-spacing:.1em;text-transform:uppercase;padding:8px 14px;border-radius:20px;z-index:300;box-shadow:0 4px 14px rgba(0,0,0,.4);transition:opacity .3s;pointer-events:none;white-space:nowrap}
 </style>
 </head>
@@ -358,7 +359,7 @@ kbd{display:inline-block;min-width:20px;height:20px;padding:0 5px;border-radius:
           <p><kbd>⌘/Ctrl</kbd><kbd>Z</kbd><span>Undo</span></p><p><kbd>⇧</kbd><kbd>⌘/Ctrl</kbd><kbd>Z</kbd><span>Redo</span></p>
           <p><kbd>T</kbd> / <kbd>I</kbd><span>Add text / image</span></p><p><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd><span>Move (⇧ = 10×)</span></p>
           <p><kbd>-</kbd> <kbd>+</kbd><span>Size</span></p><p><kbd>[</kbd> <kbd>]</kbd><span>Turn</span></p><p><kbd>,</kbd> <kbd>.</kbd><span>Darker / lighter (10 ink stops)</span></p><p><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><span>Print in ink 1, 2 or 3</span></p>
-          <p><kbd>F</kbd><span>Front / back</span></p><p><kbd>⌘/Ctrl</kbd><kbd>D</kbd><span>Duplicate</span></p>
+          <p><kbd>F</kbd><span>Front / back</span></p><p><kbd>⌘/Ctrl</kbd><kbd>D</kbd><span>Duplicate</span></p><p><kbd>⌘/Ctrl</kbd><kbd>V</kbd><span>Paste an image</span></p>
           <p><kbd>⌫</kbd><span>Delete selected</span></p><p><kbd>⇧</kbd><kbd>⌘/Ctrl</kbd><kbd>⌫</kbd><span>Clear page</span></p>
           <p><kbd>Enter</kbd><span>Edit text</span></p><p><kbd>⌘/Ctrl</kbd><kbd>Enter</kbd><span>Run / print</span></p>
           <p><kbd>Esc</kbd><span>Deselect · again for panel</span></p></section>
@@ -794,6 +795,17 @@ const norm = r => { r=((r+180)%360+360)%360-180; return Math.round(r*10)/10; };
 function select(el){ if(el!==S.sel){ S.maskMode=false; S.draft=null; } S.sel=el; renderDesignPanel(); renderDesign(); }
 function scaleSel(k){ const el=S.sel; if(!el) return; if(el.type==='image') el.w=clamp(el.w*k,20,4000); else el.size=clamp(el.size*k,8,1200); renderDesign(); updateLCD(); }
 
+/* ---------------- paste button ----------------
+   Reads an image copied in another app (screenshot, browser image, Photoshop…) and opens it in import. */
+async function pasteImage(){
+  try{
+    if(!navigator.clipboard || !navigator.clipboard.read) throw 0;
+    const items=await navigator.clipboard.read();
+    for(const it of items){ const t=it.types.find(t=>t.startsWith('image/')); if(t){ openImport(new File([await it.getType(t)],'pasted',{type:t})); return; } }
+    toast('No image on the clipboard');
+  }catch(_){ toast('Clipboard blocked here · press Ctrl/⌘ V instead'); }
+}
+
 /* ---------------- design panel ---------------- */
 const IC = {
   play:'<path d="M8 5l11 7-11 7z" fill="#3a3832"/>',
@@ -826,6 +838,7 @@ const IC = {
   brush:'<path d="M14 4l6 6-8 8-3-3z"/><path d="M9 15c-3 0-5 2-5 5 3 0 5-2 5-5z" fill="#3a3832"/>',
   eye:'<path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/>',
   reset:'<path d="M5 12a7 7 0 1 0 2-5"/><path d="M5 4v4h4"/>',
+  paste:'<rect x="6" y="5" width="12" height="15" rx="1.5"/><path d="M9 5V3.5h6V5"/><path d="M9 11h6M9 15h4"/>',
   undo:'<path d="M9 7L5 11l4 4"/><path d="M5 11h9a5 5 0 0 1 0 10h-3"/>',
   redo:'<path d="M15 7l4 4-4 4"/><path d="M19 11h-9a5 5 0 0 0 0 10h3"/>',
 };
@@ -851,6 +864,7 @@ function renderDesignPanel(){
       {act:'mReset',icon:svg('reset'),t:'Reset',dis:!(el.masks&&el.masks.length)&&!el.minv},{act:'run',icon:svg('play'),t:'Run'},
       {act:'undo',icon:svg('undo'),t:'Undo'},{act:'redo',icon:svg('redo'),t:'Redo'},
       {act:'copy',icon:svg('copy'),t:'Copy'},{act:'mask',icon:svg('check'),t:'Done',cls:'green'},
+      {act:'paste',icon:svg('paste'),t:'Paste',cls:'col3'},
     ];
   } else {
     if(txt){
@@ -879,7 +893,8 @@ function renderDesignPanel(){
         {act:'darker',icon:svg('moon'),t:'Darker',rep:1,dis:none||TINT(el)>=1},{act:'lighter',icon:svg('sun'),t:'Lighter',rep:1,dis:none||TINT(el)<=.1},
       ];
     }
-    b.push({act:'addImg',icon:svg('image'),t:'+ Image'},{act:'addText',icon:svg('text'),t:'+ Text'},{act:'copy',icon:svg('copy'),t:'Copy',dis:none},{act:'panel',icon:svg('panel'),t:'Panel'});
+    b.push({act:'addImg',icon:svg('image'),t:'+ Image'},{act:'addText',icon:svg('text'),t:'+ Text'},{act:'copy',icon:svg('copy'),t:'Copy',dis:none},{act:'panel',icon:svg('panel'),t:'Panel'},
+           {act:'paste',icon:svg('paste'),t:'Paste',cls:'col3'});
   }
   $('#dgrid').innerHTML=b.map(btn).join('');
   const lk=$('#kLayer'); lk.disabled=none||S.els.length<2; lk.querySelector('.t').textContent=el&&isTop(el)?'Back':'Front';
@@ -950,6 +965,7 @@ function act(a, step=1){
     case 'addText': { commit(); const t={type:'text',text:'NEW TEXT',font:0,size:120,align:'center',drum:S.sel&&S.sel.type==='text'?S.sel.drum:0,x:W/2,y:H/2,rot:0,lh:1.02};
       S.els.push(t); select(t); loadFont(t).then(()=>{ renderDesign(); openTextEdit(t,true); }); return; }
     case 'copy': { const c=Object.assign({},el,{x:el.x+30,y:el.y+30}); S.els.push(c); select(c); return; }
+    case 'paste': pasteImage(); return;
     case 'panel': setView('machine'); return;
   }
   renderDesignPanel(); renderDesign();
@@ -1360,7 +1376,11 @@ const dv=$('#device');
 dv.addEventListener('dragover',e=>{ e.preventDefault(); if(S.view==='design') $('#dropHint').classList.remove('hidden'); });
 dv.addEventListener('dragleave',e=>{ if(e.target===dv||e.target.id==='dropHint') $('#dropHint').classList.add('hidden'); });
 dv.addEventListener('drop',e=>{ e.preventDefault(); $('#dropHint').classList.add('hidden'); const f=[...e.dataTransfer.files].find(f=>f.type.startsWith('image/')); if(f) openImport(f); });
-document.addEventListener('paste',e=>{ const it=[...(e.clipboardData||{}).items||[]].find(i=>i.type.startsWith('image/')); if(it) openImport(it.getAsFile()); });
+document.addEventListener('paste',e=>{
+  if(/TEXTAREA|INPUT/.test(e.target.tagName)) return;
+  const it=[...(e.clipboardData||{}).items||[]].find(i=>i.type.startsWith('image/'));
+  if(it){ e.preventDefault(); openImport(it.getAsFile()); }
+});
 
 // keyboard
 document.addEventListener('keydown',e=>{
