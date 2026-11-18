@@ -225,12 +225,18 @@ kbd{display:inline-block;min-width:20px;height:20px;padding:0 5px;border-radius:
 .tseg{margin-top:8px}
 .tseg .sbtn{height:32px;font-size:9px}
 .key.col3{grid-column:3}
-#toast{position:absolute;left:50%;top:22px;transform:translateX(-50%);background:#f4f2ea;color:#222;font:700 10px Inter;letter-spacing:.1em;text-transform:uppercase;padding:8px 14px;border-radius:20px;z-index:300;box-shadow:0 4px 14px rgba(0,0,0,.4);transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.drumtop{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 2px 10px}
+.randbtn{display:flex;align-items:center;gap:7px;height:30px;padding:0 13px 0 10px;border-radius:15px;background:#f4f2ea;color:#222;font:800 9px Inter;letter-spacing:.14em;text-transform:uppercase;flex:none;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.randbtn svg{width:16px;height:16px;fill:none;stroke:#222;stroke-width:1.8}
+.randbtn:hover{background:#fff}.randbtn:active{transform:translateY(1px)}
+#screen.sheet-open #helpBtn{display:none}
+#toast{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);background:#f4f2ea;color:#222;font:700 10px Inter;letter-spacing:.1em;text-transform:uppercase;padding:8px 14px;border-radius:20px;z-index:300;box-shadow:0 4px 14px rgba(0,0,0,.4);transition:opacity .3s;pointer-events:none;white-space:nowrap}
 </style>
 </head>
 <body>
 <div id="device">
   <div id="screen">
+    <div id="toast" style="opacity:0"></div>
     <button id="helpBtn" title="Keyboard shortcuts (?)"><b>?</b><span>Shortcuts</span></button>
     <!-- output tray -->
     <div id="tray" class="view">
@@ -340,7 +346,6 @@ kbd{display:inline-block;min-width:20px;height:20px;padding:0 5px;border-radius:
       <button class="sbtn" id="vClose">CLOSE</button>
     </div>
   </div>
-  <div id="toast" style="opacity:0"></div>
   <div id="help" class="hidden" role="dialog" aria-label="Keyboard shortcuts">
     <div class="hcard">
       <div class="hhead"><b>Shortcuts</b><button id="helpClose" aria-label="Close">×</button></div>
@@ -348,7 +353,7 @@ kbd{display:inline-block;min-width:20px;height:20px;padding:0 5px;border-radius:
         <section><h4>Machine</h4>
           <p><kbd>0</kbd>–<kbd>9</kbd><span>Copies</span></p><p><kbd>Enter</kbd><span>Start printing</span></p>
           <p><kbd>C</kbd> / <kbd>⌫</kbd><span>Clear copies</span></p><p><kbd>D</kbd><span>Design</span></p>
-          <p><kbd>I</kbd><span>Inks / drums</span></p><p><kbd>P</kbd><span>Paper</span></p>
+          <p><kbd>I</kbd><span>Inks / drums</span></p><p><kbd>X</kbd><span>Random inks that go together</span></p><p><kbd>P</kbd><span>Paper</span></p>
           <p><kbd>F</kbd><span>Feed one proof</span></p><p><kbd>V</kbd><span>View prints</span></p>
           <p><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd><span>Registration</span></p><p><kbd>R</kbd><span>Registration: drum 2 / ink 3</span></p></section>
         <section><h4>Print viewer</h4>
@@ -365,7 +370,7 @@ kbd{display:inline-block;min-width:20px;height:20px;padding:0 5px;border-radius:
           <p><kbd>Esc</kbd><span>Deselect · again for panel</span></p></section>
         <section><h4>Mask (image selected)</h4>
           <p><kbd>M</kbd><span>Mask on / off</span></p><p><kbd>K</kbd> / <kbd>E</kbd><span>Keep / erase</span></p>
-          <p><kbd>L</kbd><kbd>R</kbd><kbd>O</kbd><kbd>B</kbd><span>Lasso, box, oval, brush</span></p>
+          <p><kbd>B</kbd><kbd>R</kbd><kbd>O</kbd><span>Brush, box, oval</span></p><p><kbd>S</kbd><span>Soft brush edge</span></p><p><kbd>⌘/Ctrl</kbd><kbd>Z</kbd><span>Undo (stays in mask)</span></p>
           <p><kbd>[</kbd> <kbd>]</kbd><span>Brush size</span></p><p><kbd>X</kbd><span>Invert</span></p><p><kbd>G</kbd><span>Ghost</span></p>
           <p><kbd>Enter</kbd> / <kbd>Esc</kbd><span>Done</span></p>
           <h4 style="margin-top:14px">Mouse &amp; touch</h4>
@@ -423,7 +428,7 @@ const S = {
   regs:[null,{x:0,y:0},{x:0,y:0}], regD:1,   // registration offsets (mm) for drum 2 and pass-2 ink 3
   els:[], sel:null, view:'machine', printing:false, stop:false, tray:[], vi:0, activeDrum:0,
   tex:true, texK:1,
-  maskMode:false, draft:null, mop:'keep', mtool:'lasso', brush:.06, ghost:true
+  maskMode:false, draft:null, mop:'erase', mtool:'brush', brush:.06, ghost:false, msoft:false, hover:null
 };
 
 /* ---------------- paper texture overlay ---------------- */
@@ -612,7 +617,12 @@ function maskCanvas(ms, inv, w, h){
   if(!ms.length || ms[0].op==='erase') x.fillRect(0,0,w,h);
   for(const m of ms){
     x.globalCompositeOperation = m.op==='keep'?'source-over':'destination-out';
-    pathShape(x,m,w,h)==='fill'?x.fill():x.stroke();
+    if(m.soft && m.shape==='brush'){
+      // soft edge: draw the stroke off-canvas and let its blurred shadow land in place
+      const off=w*3+100; x.save(); x.translate(-off,0);
+      x.shadowColor='#fff'; x.shadowBlur=Math.max(2,m.r*w*.45); x.shadowOffsetX=off;
+      pathShape(x,m,w,h); x.lineWidth=m.r*w*.75; x.stroke(); x.restore();
+    } else pathShape(x,m,w,h)==='fill'?x.fill():x.stroke();
   }
   if(inv){ x.globalCompositeOperation='xor'; x.fillRect(0,0,w,h); }
   return M;
@@ -669,7 +679,7 @@ function commit(key, s){
   lastKey=key||''; lastT=now;
   HIST.u.push(s||snap()); if(HIST.u.length>150) HIST.u.shift(); HIST.r=[]; updUR();
 }
-function restore(s){ S.els=s.els.map(e=>({...e})); S.sel=S.els[s.sel]||null; S.maskMode=false; S.draft=null; renderDesignPanel(); renderDesign(); updateThumbSoon(); }
+function restore(s){ const keepMask=S.maskMode; S.els=s.els.map(e=>({...e})); S.sel=S.els[s.sel]||null; S.maskMode=keepMask && !!S.sel && S.sel.type==='image'; S.draft=null; renderDesignPanel(); renderDesign(); updateThumbSoon(); }
 function undo(){ if(!HIST.u.length) return; HIST.r.push(snap()); restore(HIST.u.pop()); lastKey=''; updUR(); }
 function redo(){ if(!HIST.r.length) return; HIST.u.push(snap()); restore(HIST.r.pop()); lastKey=''; updUR(); }
 function updUR(){
@@ -706,6 +716,15 @@ function drawDesignNow(){
       for(const m of list){ if(m.shape==='brush') continue; t.strokeStyle=m.op==='keep'?'#3f95ff':'#ff4d4d'; pathShape(t,m,w,h,-w/2,-h/2); t.stroke(); }
     }
     t.restore();
+    if(S.maskMode && S.mtool==='brush' && S.hover){
+      // brush size cursor
+      const r=S.brush*w/2, [hx,hy]=S.hover, col=S.mop==='keep'?'#3f95ff':'#ff4d4d';
+      t.save(); t.setTransform(scale,0,0,scale,0,0); t.setLineDash([]);
+      t.lineWidth=2.5*px; t.strokeStyle='rgba(255,255,255,.9)'; t.beginPath(); t.arc(hx,hy,r,0,Math.PI*2); t.stroke();
+      t.lineWidth=1.3*px; t.strokeStyle=col; t.stroke();
+      if(S.msoft){ t.setLineDash([4*px,4*px]); t.beginPath(); t.arc(hx,hy,r*1.35,0,Math.PI*2); t.stroke(); }
+      t.restore();
+    }
   }
   updateThumbSoon();
 }
@@ -737,7 +756,7 @@ dc.addEventListener('pointerdown',e=>{
   if(S.maskMode && S.sel){
     if(ptrs.size>1){ S.draft=null; renderDesign(); return; }
     const p=toLocal(S.sel,px,py), sh=S.mtool;
-    S.draft={el:S.sel, m:{op:S.mop, shape:sh, pts:(sh==='rect'||sh==='ellipse')?[p,p]:[p], r:S.brush}};
+    S.draft={el:S.sel, m:{op:S.mop, shape:sh, pts:(sh==='rect'||sh==='ellipse')?[p,p]:[p], r:S.brush, soft:sh==='brush'&&S.msoft}};
     lastPt=[px,py]; renderDesign(); return;
   }
   if(ptrs.size===1){
@@ -753,6 +772,7 @@ dc.addEventListener('pointerdown',e=>{
   }
 });
 dc.addEventListener('pointermove',e=>{
+  if(S.maskMode && S.mtool==='brush'){ S.hover=toPage(e); if(!ptrs.has(e.pointerId)){ renderDesign(); return; } }
   if(!ptrs.has(e.pointerId)) return; ptrs.set(e.pointerId,toPage(e));
   const [px,py]=toPage(e);
   if(S.draft){
@@ -784,6 +804,7 @@ const endPtr=e=>{
   if(ptrs.size<2) pinch=null; if(ptrs.size===0) drag=null;
 };
 dc.addEventListener('pointerup',endPtr); dc.addEventListener('pointercancel',endPtr);
+dc.addEventListener('pointerleave',()=>{ if(S.hover){ S.hover=null; renderDesign(); } });
 dc.addEventListener('wheel',e=>{
   if(!S.sel) return; e.preventDefault();
   if(S.maskMode){ act(e.deltaY>0?'brushD':'brushU'); return; }
@@ -835,6 +856,7 @@ const IC = {
   lasso:'<path d="M6 13c-2-4 2-8 7-8s7 3 6 6-6 4-9 3"/><path d="M10 14c-1 2-2 4-1 6"/><circle cx="9.5" cy="20" r="1"/>',
   rect:'<rect x="5" y="6" width="14" height="12" rx="1" stroke-dasharray="3 2.2"/>',
   ellipse:'<ellipse cx="12" cy="12" rx="8" ry="6" stroke-dasharray="3 2.2"/>',
+  soft:'<circle cx="12" cy="12" r="4" fill="#3a3832"/><circle cx="12" cy="12" r="7" stroke-dasharray="2 2.2"/><circle cx="12" cy="12" r="9.5" stroke-dasharray="1 3" opacity=".6"/>',
   brush:'<path d="M14 4l6 6-8 8-3-3z"/><path d="M9 15c-3 0-5 2-5 5 3 0 5-2 5-5z" fill="#3a3832"/>',
   eye:'<path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/>',
   reset:'<path d="M5 12a7 7 0 1 0 2-5"/><path d="M5 4v4h4"/>',
@@ -858,9 +880,9 @@ function renderDesignPanel(){
     b=[
       {act:'mKeep',icon:svg('keep'),t:'Keep',led:S.mop==='keep'},{act:'mErase',icon:svg('erase'),t:'Erase',led:S.mop==='erase'},
       {act:'mInv',icon:svg('invert'),t:'Invert',led:!!el.minv},{act:'mGhost',icon:svg('eye'),t:'Ghost',led:!!S.ghost},
-      {act:'tLasso',icon:svg('lasso'),t:'Lasso',led:S.mtool==='lasso'},{act:'tRect',icon:svg('rect'),t:'Box',led:S.mtool==='rect'},
-      {act:'tEllipse',icon:svg('ellipse'),t:'Oval',led:S.mtool==='ellipse'},{act:'tBrush',icon:svg('brush'),t:'Brush',led:S.mtool==='brush'},
-      {act:'brushD',icon:svg('minus'),t:'Brush',rep:1},{act:'brushU',icon:svg('plus'),t:'Brush',rep:1},
+      {act:'tBrush',icon:svg('brush'),t:'Brush',led:S.mtool==='brush'},{act:'mSoft',icon:svg('soft'),t:'Soft edge',led:S.msoft},
+      {act:'tRect',icon:svg('rect'),t:'Box',led:S.mtool==='rect'},{act:'tEllipse',icon:svg('ellipse'),t:'Oval',led:S.mtool==='ellipse'},
+      {act:'brushD',icon:svg('minus'),t:'Smaller',rep:1},{act:'brushU',icon:svg('plus'),t:'Bigger',rep:1},
       {act:'mReset',icon:svg('reset'),t:'Reset',dis:!(el.masks&&el.masks.length)&&!el.minv},{act:'run',icon:svg('play'),t:'Run'},
       {act:'undo',icon:svg('undo'),t:'Undo'},{act:'redo',icon:svg('redo'),t:'Redo'},
       {act:'copy',icon:svg('copy'),t:'Copy'},{act:'mask',icon:svg('check'),t:'Done',cls:'green'},
@@ -906,7 +928,7 @@ function updateLCD(){
   const el=S.sel; let a,b;
   if(!el){ a=S.els.length?'No selection':'Blank page'; b=S.els.length?`${S.els.length} item${S.els.length===1?'':'s'} · tap to select`:'+ image or + text to start'; }
   else if(S.maskMode){
-    a=`Mask · ${S.mop} · ${{lasso:'lasso',rect:'box',ellipse:'oval',brush:'brush '+Math.round(S.brush*100)+'%'}[S.mtool]}`;
+    a=`Mask · ${S.mop} · ${{rect:'box',ellipse:'oval',brush:(S.msoft?'soft ':'')+'brush '+Math.round(S.brush*100)+'%'}[S.mtool]}`;
     const n=(el.masks||[]).length; b=`${n} shape${n===1?'':'s'}${el.minv?' · inverted':''} · draw on image`;
   }
   else if(el.type==='image'){
@@ -954,7 +976,7 @@ function act(a, step=1){
     case 'mInv': el.minv=!el.minv; break;
     case 'mGhost': S.ghost=!S.ghost; break;
     case 'mReset': el.masks=[]; el.minv=false; break;
-    case 'tLasso': S.mtool='lasso'; break;
+    case 'mSoft': S.msoft=!S.msoft; S.mtool='brush'; break;
     case 'tRect': S.mtool='rect'; break;
     case 'tEllipse': S.mtool='ellipse'; break;
     case 'tBrush': S.mtool='brush'; break;
@@ -985,20 +1007,84 @@ document.addEventListener('pointerdown',e=>{
 
 /* ---------------- sheets (pickers / text edit) ---------------- */
 let sheetEl=null;
-function closeSheet(){ if(sheetEl){ sheetEl.remove(); sheetEl=null; } $('#drumCaret').textContent='▴'; }
+function closeSheet(){ $('#screen').classList.remove('sheet-open'); if(sheetEl){ sheetEl.remove(); sheetEl=null; } $('#drumCaret').textContent='▴'; }
 function openSheet(html, onClose){
   closeSheet();
   const s=document.createElement('div'); s.className='sheet';
   s.innerHTML=`<div class="sbody">${html}</div><div class="handle" title="Close"></div>`;
   s.querySelector('.handle').onclick=()=>{ closeSheet(); onClose&&onClose(); };
-  $('#screen').appendChild(s); sheetEl=s; return s;
+  $('#screen').appendChild(s); $('#screen').classList.add('sheet-open'); sheetEl=s; return s;
+}
+/* ---------------- random inks that work together ----------------
+   Every pair of inks is scored against the current paper, then one is picked at random from the best:
+   - each ink must stand out from the paper, and one must be strong enough for text;
+   - the two inks must be clearly different, and their overprint should read as a new colour;
+   - two greys, or two very dark inks, score low; classic riso pairings get a boost.
+   A third ink (when on) must differ from both and from the paper. */
+const toLab = hex => {
+  const lin = v => { v/=255; return v<=0.04045? v/12.92 : Math.pow((v+0.055)/1.055,2.4); };
+  const [r,g,b]=hex2rgb(hex).map(lin);
+  const f = t => t>0.008856? Math.cbrt(t) : 7.787*t+16/116;
+  const X=f((r*.4124+g*.3576+b*.1805)/.95047), Y=f(r*.2126+g*.7152+b*.0722), Z=f((r*.0193+g*.1192+b*.9505)/1.08883);
+  return [116*Y-16, 500*(X-Y), 200*(Y-Z)];
+};
+const dE = (a,b) => Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
+const mulHex = (h1,h2) => '#'+hex2rgb(h1).map((v,i)=>Math.round(v*hex2rgb(h2)[i]/255).toString(16).padStart(2,'0')).join('');
+const CLASSIC = [['Fluorescent Pink','Blue'],['Yellow','Blue'],['Fluorescent Pink','Teal'],['Fluorescent Orange','Riso Federal Blue'],
+  ['Yellow','Fluorescent Pink'],['Bright Red','Blue'],['Fluorescent Orange','Teal'],['Sunflower','Cornflower'],['Aqua','Fluorescent Pink'],
+  ['Light Teal','Bright Red'],['Kelly Green','Fluorescent Pink'],['Yellow','Purple'],['Black','Fluorescent Pink'],['Black','Yellow'],
+  ['Medium Blue','Orange'],['Sunflower','Teal'],['Fluorescent Red','Aqua'],['Mint','Fluorescent Orange'],['Violet','Yellow'],['Green','Fluorescent Pink']];
+let randHist=[];
+function randomInks(){
+  const P=PAPERS[S.paper], paper=toLab(P[1]||'#ffffff'), L=INKS.map(k=>toLab(k[1]));
+  const seen=new Set(), ok=[];
+  INKS.forEach((k,i)=>{
+    const hx=k[1].toUpperCase(); if(seen.has(hx)) return; seen.add(hx);          // skip duplicate colours (e.g. Wine/Burgundy)
+    if(hx==='#FFFFFF' && paper[0]>80) return;                                       // white ink only on darker stock
+    if(dE(L[i],paper)<30) return;                                                   // must show on the paper
+    ok.push(i);
+  });
+  const chroma=l=>Math.hypot(l[1],l[2]);
+  const classic=new Set(CLASSIC.map(([a,b])=>[a,b].sort().join('|')));
+  const pairs=[];
+  for(let x=0;x<ok.length;x++) for(let y=x+1;y<ok.length;y++){
+    const i=ok[x], j=ok[y], li=L[i], lj=L[j];
+    const isClassic=classic.has([INKS[i][0],INKS[j][0]].sort().join('|'));
+    const dij=dE(li,lj), ov=toLab(mulHex(INKS[i][1],INKS[j][1])), dov=Math.min(dE(ov,li),dE(ov,lj));
+    const legible=Math.max(Math.abs(li[0]-paper[0]),Math.abs(lj[0]-paper[0]));
+    if(!isClassic && (dij<38 || dov<10 || legible<35)) continue;
+    let sc=Math.min(dij,62)*.5 + Math.min(dov,36)*.8 + Math.min(legible,55)*.4;
+    if(isClassic) sc+=25;
+    if(/Fluorescent/.test(INKS[i][0]+INKS[j][0])) sc+=6;
+    if(li[0]<40 && lj[0]<40) sc-=20;
+    if(chroma(li)<12 && chroma(lj)<12) sc-=25;
+    if(!isClassic && Math.min(chroma(li),chroma(lj))<20) sc-=12;                    // greyish partners look muddy
+    if(paper[0]>90 && Math.max(li[0],lj[0])>92) sc-=8;                             // very pale inks vanish on white
+    pairs.push({i,j,sc});
+  }
+  pairs.sort((a,b)=>b.sc-a.sc);
+  const key=p=>[p.i,p.j].sort().join('|');
+  let pool=pairs.slice(0,90).filter(p=>!randHist.includes(key(p)) && key(p)!==[S.ink[0],S.ink[1]].sort().join('|'));
+  if(!pool.length) pool=pairs.slice(0,90);
+  const pick = (arr,w) => { let t=arr.reduce((s,a)=>s+w(a),0)*Math.random(); for(const a of arr){ t-=w(a); if(t<=0) return a; } return arr[0]; };
+  const c=pick(pool,p=>Math.max(1,p.sc)**1.5);
+  randHist=[key(c),...randHist].slice(0,8);
+  // lighter ink on drum 1, darker on drum 2
+  const [a,b]= L[c.i][0]>=L[c.j][0] ? [c.i,c.j] : [c.j,c.i];
+  S.ink[0]=a; S.ink[1]=b;
+  if(S.ink3){
+    const thirds=ok.filter(k=>k!==a&&k!==b).map(k=>({k,sc:Math.min(dE(L[k],L[a]),dE(L[k],L[b]))})).filter(t=>t.sc>=32).sort((x,y)=>y.sc-x.sc).slice(0,15);
+    if(thirds.length) S.ink[2]=pick(thirds,t=>t.sc*t.sc).k;
+  }
+  inksChanged();
+  toast([0,1,2].slice(0,nInks()).map(inkName).join(' + '));
 }
 function openDrums(){
   if(sheetEl && sheetEl.dataset.kind==='drum'){ closeSheet(); return; }
   const draw=()=>{
     if(S.activeDrum>=nInks()) S.activeDrum=0;
     const cyl=d=>{ const c=inkHex(d); return `<div class="drumslot"><div class="num">${d+1}</div><div class="cyl ${S.activeDrum===d?'on':''}" data-slot="${d}" style="background:linear-gradient(${c}cc,${c} 30%,${c} 65%,#0005),${c}"><span>${inkName(d)}</span></div>${d===2?'<button class="cylx" data-ink3off title="Remove third colour">×</button>':''}</div>`; };
-    s.querySelector('.sbody').innerHTML = `<div class="shead">Pass 1 · two drums · tap a slot, then an ink</div>${cyl(0)}${cyl(1)}
+    s.querySelector('.sbody').innerHTML = `<div class="drumtop"><div class="shead" style="margin:0">Pass 1 · two drums · tap a slot, then an ink</div><button class="randbtn" data-rand title="Pick inks that work well together on this paper (X)"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.3" fill="currentColor"/><circle cx="15" cy="15" r="1.3" fill="currentColor"/><circle cx="15" cy="9" r="1.3" fill="currentColor"/><circle cx="9" cy="15" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/></svg>Random</button></div>${cyl(0)}${cyl(1)}
       <div class="shead" style="margin-top:12px">Pass 2 · optional third colour</div>
       ${S.ink3?cyl(2):'<button class="addink" data-ink3on>+ Add a third colour <small>printed on a second pass</small></button>'}
       <div class="shead" style="margin-top:14px">${INKS.length} standard riso inks</div>
@@ -1006,6 +1092,7 @@ function openDrums(){
   };
   const s=openSheet(''); s.dataset.kind='drum'; draw(); $('#drumCaret').textContent='▾';
   s.addEventListener('click',e=>{
+    if(e.target.closest('[data-rand]')){ randomInks(); draw(); return; }
     if(e.target.closest('[data-ink3on]')){ S.ink3=true; S.activeDrum=2; inksChanged(); draw(); return; }
     if(e.target.closest('[data-ink3off]')){ setInk3(false); draw(); return; }
     const sl=e.target.closest('[data-slot]'); if(sl){ S.activeDrum=+sl.dataset.slot; draw(); return; }
@@ -1409,7 +1496,7 @@ document.addEventListener('keydown',e=>{
     if(mod && k==='Enter'){ e.preventDefault(); act('run'); return; }
     const el=S.sel;
     if(S.maskMode){
-      const m={k:'mKeep',e:'mErase',l:'tLasso',r:'tRect',o:'tEllipse',b:'tBrush',x:'mInv',g:'mGhost','[':'brushD',']':'brushU'}[kl];
+      const m={k:'mKeep',e:'mErase',s:'mSoft',r:'tRect',o:'tEllipse',b:'tBrush',x:'mInv',g:'mGhost','[':'brushD',']':'brushU'}[kl];
       if(m && !mod){ e.preventDefault(); act(m); }
       else if(k==='Escape'||k==='Enter'||kl==='m'){ e.preventDefault(); act('mask'); }
       return;
@@ -1450,6 +1537,7 @@ document.addEventListener('keydown',e=>{
     else if(kl==='i') openDrums();
     else if(kl==='f') $('#bFeed').click();
     else if(kl==='r') switchReg();
+    else if(kl==='x'){ randomInks(); if(sheetEl && sheetEl.dataset.kind==='drum'){ closeSheet(); openDrums(); } }
     else if(kl==='v' && S.tray.length){ S.vi=S.tray.length-1; openViewer(); }
     else if(k==='ArrowLeft'||k==='ArrowRight'||k==='ArrowUp'||k==='ArrowDown'){ e.preventDefault(); nudgeReg({ArrowLeft:'-1,0',ArrowRight:'1,0',ArrowUp:'0,-1',ArrowDown:'0,1'}[k]); }
   } else if(S.view==='import'){
