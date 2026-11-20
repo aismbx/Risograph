@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Two Drum Press — Risograph Maker</title>
 <meta name="theme-color" content="#141313">
+<meta name="description" content="A risograph print maker in your browser: design with two or three riso inks, pick a paper, and print copies with real halftone, grain and misregistration.">
+<meta property="og:title" content="Two Drum Press — Risograph Maker">
+<meta property="og:description" content="Design with riso inks, pick a paper and print copies with halftone, grain and misregistration — in your browser.">
+<meta property="og:type" content="website">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23f2efe6'/%3E%3Cg style='mix-blend-mode:multiply'%3E%3Ccircle cx='25' cy='28' r='15' fill='%23FF48B0'/%3E%3Ccircle cx='39' cy='37' r='15' fill='%230078BF'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Bebas+Neue&family=DM+Serif+Display&family=Instrument+Serif&family=Libre+Caslon+Text:wght@700&family=Oswald:wght@700&family=Playfair+Display:wght@700&family=Rubik+Mono+One&family=Space+Mono:wght@400;700&family=Inter:wght@500;700;800&display=swap" rel="stylesheet">
@@ -109,6 +114,10 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
 #mGrid{display:grid;grid-template-columns:3fr 4fr;gap:10px}
 #keypad{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:var(--key-h);gap:var(--gap)}
 #keypad .z{grid-column:span 2}
+#dgrid{grid-template-rows:repeat(5,var(--key-h))}
+.key.arr svg+svg{margin-left:-2px}
+.key.arr{flex-direction:row;flex-wrap:wrap;justify-content:center;align-content:center;column-gap:4px}
+.key.arr .t{width:100%;text-align:center}
 #rcol{display:grid;grid-auto-rows:var(--key-h);gap:var(--gap)}
 .rrow{display:flex;gap:var(--gap)}
 .rrow>*{flex:1}
@@ -146,7 +155,7 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
 .brand{display:none}
 
 /* ---------- desktop: screen left, controls right ---------- */
-@media (min-width:900px) and (min-aspect-ratio:1/1){
+@media (min-width:640px) and (min-aspect-ratio:1/1){
   :root{--key-h:clamp(40px,6.2dvh,58px);--gap:clamp(7px,1.1dvh,11px)}
   body{display:block}
   #device{width:100vw;height:100dvh;max-height:none;flex-direction:row;border-radius:0;box-shadow:none}
@@ -230,6 +239,23 @@ kbd{display:inline-block;min-width:20px;height:20px;padding:0 5px;border-radius:
 .randbtn svg{width:16px;height:16px;fill:none;stroke:#222;stroke-width:1.8}
 .randbtn:hover{background:#fff}.randbtn:active{transform:translateY(1px)}
 #screen.sheet-open #helpBtn{display:none}
+/* short landscape screens (phones on their side): smaller keys, no brand bar */
+@media (min-width:640px) and (min-aspect-ratio:1/1) and (max-height:560px){
+  :root{--key-h:clamp(22px,7.2dvh,40px);--gap:clamp(3px,.9dvh,7px)}
+  #panel{width:clamp(320px,42vw,440px);padding:8px 14px calc(8px + env(safe-area-inset-bottom))}
+  #panel .brand{display:none}
+  .key .t{font-size:7px} .key svg{width:calc(var(--key-h)*.42);height:calc(var(--key-h)*.42)}
+  .lcd,.picks .lcd{min-height:calc(var(--key-h)*1.1);padding:3px 8px;font-size:10px!important}
+  .dhead,.lbl{margin-bottom:3px}
+  #helpBtn{top:10px}
+}
+/* tablets held upright: use more of the width */
+@media (min-width:700px) and (max-aspect-ratio:1/1){
+  :root{--key-h:clamp(36px,5.2dvh,58px)}
+  #device{width:min(100vw,680px)!important;height:min(calc(100dvh - 40px),1180px)!important}
+  #panel{padding-left:22px;padding-right:22px}
+  .key .t{font-size:8.5px}
+}
 #toast{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);background:#f4f2ea;color:#222;font:700 10px Inter;letter-spacing:.1em;text-transform:uppercase;padding:8px 14px;border-radius:20px;z-index:300;box-shadow:0 4px 14px rgba(0,0,0,.4);transition:opacity .3s;pointer-events:none;white-space:nowrap}
 </style>
 </head>
@@ -364,7 +390,8 @@ kbd{display:inline-block;min-width:20px;height:20px;padding:0 5px;border-radius:
           <p><kbd>⌘/Ctrl</kbd><kbd>Z</kbd><span>Undo</span></p><p><kbd>⇧</kbd><kbd>⌘/Ctrl</kbd><kbd>Z</kbd><span>Redo</span></p>
           <p><kbd>T</kbd> / <kbd>I</kbd><span>Add text / image</span></p><p><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd><span>Move (⇧ = 10×)</span></p>
           <p><kbd>-</kbd> <kbd>+</kbd><span>Size</span></p><p><kbd>[</kbd> <kbd>]</kbd><span>Turn</span></p><p><kbd>,</kbd> <kbd>.</kbd><span>Darker / lighter (10 ink stops)</span></p><p><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><span>Print in ink 1, 2 or 3</span></p>
-          <p><kbd>F</kbd><span>Front / back</span></p><p><kbd>⌘/Ctrl</kbd><kbd>D</kbd><span>Duplicate</span></p><p><kbd>⌘/Ctrl</kbd><kbd>V</kbd><span>Paste an image</span></p>
+          <p><kbd>F</kbd><span>Front / back</span></p><p><kbd>⇧</kbd><kbd>H</kbd> / <kbd>⇧</kbd><kbd>V</kbd><span>Flip horizontal / vertical</span></p>
+          <p><kbd>⌥/Alt</kbd><kbd>A</kbd><kbd>H</kbd><kbd>D</kbd><span>Align left / centre / right</span></p><p><kbd>⌥/Alt</kbd><kbd>W</kbd><kbd>V</kbd><kbd>S</kbd><span>Align top / middle / bottom</span></p><p><kbd>⌘/Ctrl</kbd><kbd>D</kbd><span>Duplicate</span></p><p><kbd>⌘/Ctrl</kbd><kbd>V</kbd><span>Paste an image</span></p>
           <p><kbd>⌫</kbd><span>Delete selected</span></p><p><kbd>⇧</kbd><kbd>⌘/Ctrl</kbd><kbd>⌫</kbd><span>Clear page</span></p>
           <p><kbd>Enter</kbd><span>Edit text</span></p><p><kbd>⌘/Ctrl</kbd><kbd>Enter</kbd><span>Run / print</span></p>
           <p><kbd>Esc</kbd><span>Deselect · again for panel</span></p></section>
@@ -428,6 +455,7 @@ const S = {
   regs:[null,{x:0,y:0},{x:0,y:0}], regD:1,   // registration offsets (mm) for drum 2 and pass-2 ink 3
   els:[], sel:null, view:'machine', printing:false, stop:false, tray:[], vi:0, activeDrum:0,
   tex:true, texK:1,
+  sub:null,   // 'align' or 'flip' panel open for the selected item
   maskMode:false, draft:null, mop:'erase', mtool:'brush', brush:.06, ghost:false, msoft:false, hover:null
 };
 
@@ -567,7 +595,7 @@ function measure(el){
 }
 function drawText(ctx, el){
   measure(el);
-  ctx.save(); ctx.translate(el.x,el.y); ctx.rotate(el.rot*Math.PI/180);
+  ctx.save(); ctx.translate(el.x,el.y); ctx.rotate(el.rot*Math.PI/180); ctx.scale(el.fx?-1:1, el.fy?-1:1);
   ctx.font=fontStr(el); ctx.textBaseline='middle'; ctx.fillStyle='#000'; ctx.textAlign=el.align;
   const ax = el.align==='left'?-el._bw/2: el.align==='right'?el._bw/2:0, lh=el.size*el.lh;
   el._lines.forEach((l,i)=>ctx.fillText(l, ax, -el._bh/2+(i+.5)*lh));
@@ -583,7 +611,7 @@ function drawMask(ctx, d, scale, jit, ghost){
     if(el.type==='image'){
       const raw=el.dens[d]; if(!raw) continue;
       const c=maskedDens(el,d);
-      ctx.save(); ctx.translate(el.x,el.y); ctx.rotate(el.rot*Math.PI/180);
+      ctx.save(); ctx.translate(el.x,el.y); ctx.rotate(el.rot*Math.PI/180); ctx.scale(el.fx?-1:1, el.fy?-1:1);
       const w=el.w, h=el.w*el.ar;
       if(ghost===el){ ctx.globalAlpha=.22*TINT(el); ctx.drawImage(raw,-w/2,-h/2,w,h); }
       ctx.globalAlpha=TINT(el); ctx.drawImage(c,-w/2,-h/2,w,h); ctx.globalAlpha=1; ctx.restore();
@@ -674,6 +702,7 @@ function composite(target, scale, ghost){
 const HIST={u:[],r:[]}; let lastKey='', lastT=0;
 const snap = () => ({els:S.els.map(e=>({...e})), sel:S.els.indexOf(S.sel)});
 function commit(key, s){
+  designChanged();
   const now=Date.now();
   if(key && key===lastKey && now-lastT<700){ lastT=now; return; }
   lastKey=key||''; lastT=now;
@@ -699,7 +728,7 @@ function fitDesign(){
   renderDesign();
 }
 let raf=0;
-function renderDesign(){ if(raf) return; raf=requestAnimationFrame(()=>{ raf=0; drawDesignNow(); }); }
+function renderDesign(){ scheduleSave(); if(raf) return; raf=requestAnimationFrame(()=>{ raf=0; drawDesignNow(); }); }
 function drawDesignNow(){
   $('#emptyHint').classList.toggle('hidden', S.els.length>0);
   if(S.view!=='design' || !dc.width) return;
@@ -709,10 +738,11 @@ function drawDesignNow(){
     t.save(); t.setTransform(scale,0,0,scale,0,0); t.translate(el.x,el.y); t.rotate(el.rot*Math.PI/180);
     t.lineWidth=1.6*px; t.setLineDash([10*px,8*px]);
     t.strokeStyle=S.maskMode?'#ff9b2f':'#3f95ff';
-    t.strokeRect(-w/2-6,-h/2-6,w+12,h+12);
+    if(S.maskMode) t.strokeRect(-w/2-6,-h/2-6,w+12,h+12);          // mask mode: the whole image, so hidden parts can be painted back
+    else { const r=visRect(el); t.strokeRect(r.x0-6,r.y0-6,r.x1-r.x0+12,r.y1-r.y0+12); }
     if(S.maskMode){
       const list=[...(el.masks||[])]; if(S.draft) list.push(S.draft.m);
-      t.lineWidth=1.4*px; t.setLineDash([6*px,5*px]);
+      t.lineWidth=1.4*px; t.setLineDash([6*px,5*px]); t.scale(el.fx?-1:1, el.fy?-1:1);
       for(const m of list){ if(m.shape==='brush') continue; t.strokeStyle=m.op==='keep'?'#3f95ff':'#ff4d4d'; pathShape(t,m,w,h,-w/2,-h/2); t.stroke(); }
     }
     t.restore();
@@ -737,13 +767,76 @@ function updateThumb(){
 function elSize(el){ if(el.type==='image') return [el.w, el.w*el.ar]; measure(el); return [el._bw, el._bh]; }
 function toLocal(el,px,py){
   const a=-el.rot*Math.PI/180, dx=px-el.x, dy=py-el.y, [w,h]=elSize(el);
-  return [(dx*Math.cos(a)-dy*Math.sin(a))/w, (dx*Math.sin(a)+dy*Math.cos(a))/h];
+  const u=(dx*Math.cos(a)-dy*Math.sin(a))/w, v=(dx*Math.sin(a)+dy*Math.cos(a))/h;
+  return [el.fx?-u:u, el.fy?-v:v];
 }
+/* ---------------- visible bounds ----------------
+   The part of an item that actually prints, as a rectangle around its centre (page units, before rotation,
+   flips applied). Images: ink after the mask, ignoring very faint pixels and stray specks.
+   Text: the real outline of the letters, not the line box. Used by Align, selection and clicking. */
+function visRect(el){
+  const [w,h]=elSize(el); let r=null;
+  if(el.type==='text') r=textInkRect(el);
+  else {
+    const key=[el.dens[0],el.dens[1],el.dens[2],el.masks,el.minv];
+    // cached as fractions of the image (0–1), so it stays right when the image is resized
+    let n; const ck=el._vb; if(ck && ck.key.every((k,i)=>k===key[i])) n=ck.n;
+    else { n=imageInkRect(el); el._vb={key,n}; }
+    if(n) r={x0:(n.u0-.5)*w, x1:(n.u1-.5)*w, y0:(n.v0-.5)*h, y1:(n.v1-.5)*h};
+  }
+  if(!r) r={x0:-w/2,y0:-h/2,x1:w/2,y1:h/2};
+  if(el.fx) r={x0:-r.x1,x1:-r.x0,y0:r.y0,y1:r.y1};
+  if(el.fy) r={x0:r.x0,x1:r.x1,y0:-r.y1,y1:-r.y0};
+  return r;
+}
+function imageInkRect(el){
+  const src=[0,1,2].map(d=>el.dens[d]&&maskedDens(el,d)).filter(Boolean); if(!src.length) return null;
+  const sw=Math.min(300,src[0].width), sh=Math.max(1,Math.round(sw*src[0].height/src[0].width));
+  const c=mk(sw,sh), x=ctx2(c); x.globalCompositeOperation='lighten';
+  for(const s of src) x.drawImage(s,0,0,sw,sh);
+  const a=x.getImageData(0,0,sw,sh).data, cols=new Float64Array(sw), rows=new Float64Array(sh); let tot=0;
+  for(let j=0;j<sh;j++) for(let i=0;i<sw;i++){ const v=a[(j*sw+i)*4+3]; if(v>=20){ cols[i]++; rows[j]++; tot++; } }
+  if(!tot) return null;
+  // trim the outermost 0.3% of ink from each side so a few stray specks don't stretch the box
+  const cut=tot*.003, edge=(arr,n)=>{ let s=0,lo=0,hi=n-1; while(lo<n-1 && (s+=arr[lo])<=cut) lo++; s=0; while(hi>0 && (s+=arr[hi])<=cut) hi--; return [lo,hi+1]; };
+  const [i0,i1]=edge(cols,sw), [j0,j1]=edge(rows,sh);
+  return {u0:i0/sw, u1:i1/sw, v0:j0/sh, v1:j1/sh};
+}
+function textInkRect(el){
+  measure(el); mctx.font=fontStr(el); mctx.textBaseline='middle'; mctx.textAlign=el.align;
+  const ax=el.align==='left'?-el._bw/2: el.align==='right'?el._bw/2:0, lh=el.size*el.lh;
+  let r=null;
+  el._lines.forEach((l,i)=>{
+    if(!l.trim()) return;
+    const m=mctx.measureText(l); if(m.actualBoundingBoxAscent==null) return;
+    const cy=-el._bh/2+(i+.5)*lh;
+    const b={x0:ax-m.actualBoundingBoxLeft, x1:ax+m.actualBoundingBoxRight, y0:cy-m.actualBoundingBoxAscent, y1:cy+m.actualBoundingBoxDescent};
+    r=r?{x0:Math.min(r.x0,b.x0),x1:Math.max(r.x1,b.x1),y0:Math.min(r.y0,b.y0),y1:Math.max(r.y1,b.y1)}:b;
+  });
+  mctx.textAlign='start';
+  return r;
+}
+const isCentred = el => { if(Math.abs(el.x-W/2)<1 && Math.abs(el.y-H/2)<1) return true; const e=visExtents(el); return Math.abs(el.x+(e.l+e.r)/2-W/2)<1 && Math.abs(el.y+(e.t+e.b)/2-H/2)<1; };
+// Run a change (turn, flip, resize) so the centre of the visible artwork stays put,
+// instead of pivoting around the image's full box (which can be mostly empty after a cut-out).
+function aroundVis(el, fn){
+  const vc=()=>{ const r=visRect(el), cx=(r.x0+r.x1)/2, cy=(r.y0+r.y1)/2, a=el.rot*Math.PI/180; return [cx*Math.cos(a)-cy*Math.sin(a), cx*Math.sin(a)+cy*Math.cos(a)]; };
+  const [bx,by]=vc(), px=el.x+bx, py=el.y+by;
+  fn();
+  const [ax,ay]=vc(); el.x=px-ax; el.y=py-ay;
+}
+// rotated visible box → offsets of its page-axis extremes from the item's centre
+function visExtents(el){
+  const r=visRect(el), a=el.rot*Math.PI/180, c=Math.cos(a), sn=Math.sin(a);
+  const pts=[[r.x0,r.y0],[r.x1,r.y0],[r.x1,r.y1],[r.x0,r.y1]].map(([x,y])=>[x*c-y*sn, x*sn+y*c]);
+  return {l:Math.min(...pts.map(p=>p[0])), r:Math.max(...pts.map(p=>p[0])), t:Math.min(...pts.map(p=>p[1])), b:Math.max(...pts.map(p=>p[1]))};
+}
+
 function hit(px,py){
   for(let i=S.els.length-1;i>=0;i--){
-    const el=S.els[i], [w,h]=elSize(el), a=-el.rot*Math.PI/180, dx=px-el.x, dy=py-el.y;
+    const el=S.els[i], r=visRect(el), a=-el.rot*Math.PI/180, dx=px-el.x, dy=py-el.y;
     const lx=dx*Math.cos(a)-dy*Math.sin(a), ly=dx*Math.sin(a)+dy*Math.cos(a);
-    if(Math.abs(lx)<=w/2+8 && Math.abs(ly)<=h/2+8) return el;
+    if(lx>=r.x0-10 && lx<=r.x1+10 && ly>=r.y0-10 && ly<=r.y1+10) return el;
   }
   return null;
 }
@@ -783,8 +876,10 @@ dc.addEventListener('pointermove',e=>{
   }
   if(pinch && ptrs.size>=2){
     const [a,b]=[...ptrs.values()], d=Math.hypot(b[0]-a[0],b[1]-a[1]), an=Math.atan2(b[1]-a[1],b[0]-a[0]), k=d/pinch.d0, el=pinch.el;
-    if(el.type==='image') el.w=clamp(pinch.w0*k,20,4000); else el.size=clamp(pinch.s0*k,8,1200);
-    el.rot = norm(pinch.rot0 + (an-pinch.a0)*180/Math.PI);
+    aroundVis(el,()=>{
+      if(el.type==='image') el.w=clamp(pinch.w0*k,20,4000); else el.size=clamp(pinch.s0*k,8,1200);
+      el.rot = norm(pinch.rot0 + (an-pinch.a0)*180/Math.PI);
+    });
     renderDesign(); updateLCD();
   } else if(drag){
     if(!drag.moved){ drag.moved=true; commit(null,drag.snap); }
@@ -813,8 +908,9 @@ dc.addEventListener('wheel',e=>{
 },{passive:false});
 const norm = r => { r=((r+180)%360+360)%360-180; return Math.round(r*10)/10; };
 
+// Align / Flip panels stay open and follow the new selection; Mask is tied to one image so it closes
 function select(el){ if(el!==S.sel){ S.maskMode=false; S.draft=null; } S.sel=el; renderDesignPanel(); renderDesign(); }
-function scaleSel(k){ const el=S.sel; if(!el) return; if(el.type==='image') el.w=clamp(el.w*k,20,4000); else el.size=clamp(el.size*k,8,1200); renderDesign(); updateLCD(); }
+function scaleSel(k){ const el=S.sel; if(!el) return; aroundVis(el,()=>{ if(el.type==='image') el.w=clamp(el.w*k,20,4000); else el.size=clamp(el.size*k,8,1200); }); renderDesign(); updateLCD(); }
 
 /* ---------------- paste button ----------------
    Reads an image copied in another app (screenshot, browser image, Photoshop…) and opens it in import. */
@@ -861,6 +957,17 @@ const IC = {
   eye:'<path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/>',
   reset:'<path d="M5 12a7 7 0 1 0 2-5"/><path d="M5 4v4h4"/>',
   paste:'<rect x="6" y="5" width="12" height="15" rx="1.5"/><path d="M9 5V3.5h6V5"/><path d="M9 11h6M9 15h4"/>',
+  alignL:'<path d="M4.5 3.5v17"/><rect x="7" y="7" width="12" height="4" rx="1" fill="#3a3832"/><rect x="7" y="13.5" width="7" height="4" rx="1" fill="#3a3832"/>',
+  alignH:'<path d="M12 3.5v17"/><rect x="5" y="7" width="14" height="4" rx="1" fill="#3a3832"/><rect x="8" y="13.5" width="8" height="4" rx="1" fill="#3a3832"/>',
+  alignRt:'<path d="M19.5 3.5v17"/><rect x="5" y="7" width="12" height="4" rx="1" fill="#3a3832"/><rect x="10" y="13.5" width="7" height="4" rx="1" fill="#3a3832"/>',
+  alignT:'<path d="M3.5 4.5h17"/><rect x="7" y="7" width="4" height="12" rx="1" fill="#3a3832"/><rect x="13.5" y="7" width="4" height="7" rx="1" fill="#3a3832"/>',
+  alignV:'<path d="M3.5 12h17"/><rect x="7" y="5" width="4" height="14" rx="1" fill="#3a3832"/><rect x="13.5" y="8" width="4" height="8" rx="1" fill="#3a3832"/>',
+  alignB:'<path d="M3.5 19.5h17"/><rect x="7" y="5" width="4" height="12" rx="1" fill="#3a3832"/><rect x="13.5" y="10" width="4" height="7" rx="1" fill="#3a3832"/>',
+  flipH:'<path d="M11 4L3 19h8z" fill="#3a3832"/><path d="M13 4l8 15h-8z" stroke-dasharray="2 1.6"/>',
+  flipV:'<path d="M4 11L19 3v8z" fill="#3a3832"/><path d="M4 13l15 8v-8z" stroke-dasharray="2 1.6"/>',
+  rot90L:'<path d="M7 4v5h5"/><path d="M7 9a7 7 0 1 1 1 7"/><text x="13.5" y="15.5" font-size="6.5" font-family="Inter" font-weight="800" fill="#3a3832" stroke="none" text-anchor="middle">90</text>',
+  rot90R:'<path d="M17 4v5h-5"/><path d="M17 9a7 7 0 1 0-1 7"/><text x="10.5" y="15.5" font-size="6.5" font-family="Inter" font-weight="800" fill="#3a3832" stroke="none" text-anchor="middle">90</text>',
+  straight:'<path d="M4 18h16"/><path d="M7 14h10" opacity=".5"/><path d="M12 4v8M9 7l3-3 3 3"/>',
   undo:'<path d="M9 7L5 11l4 4"/><path d="M5 11h9a5 5 0 0 1 0 10h-3"/>',
   redo:'<path d="M15 7l4 4-4 4"/><path d="M19 11h-9a5 5 0 0 0 0 10h3"/>',
 };
@@ -869,14 +976,23 @@ const chip = (d, fill, both) => both
   ? `<span class="chips2"><span class="chip ${fill?'fill':''}" style="--c:${inkHex(0)}">1</span><span class="chip ${fill?'fill':''}" style="--c:${inkHex(1)}">2</span></span>`
   : `<span class="chip ${fill?'fill':''}" style="--c:${inkHex(d)}">${d+1}</span>`;
 function btn(o){
+  if(o.gap) return '<i></i>';
   return `<button class="key ${o.cls||''}" data-act="${o.act}" ${o.rep?'data-rep="1"':''} ${o.dis?'disabled':''}>${o.led!==undefined?`<i class="led ${o.led?'on':''}"></i>`:''}${o.icon}<span class="t">${o.t}</span></button>`;
 }
 function renderDesignPanel(){
   const el=S.sel, none=!el, img=el&&el.type==='image', txt=el&&el.type==='text';
   if(!img) S.maskMode=false;
-  $('#dLbl').textContent = none?'Design':S.maskMode?'Mask':img?'Image':'Text';
+  $('#dLbl').textContent = S.sub?'Arrange':none?'Design':S.maskMode?'Mask':img?'Image':'Text';
   let b=[];
-  if(S.maskMode){
+  if(S.sub){
+    const U=[{act:'undo',icon:svg('undo'),t:'Undo'},{act:'redo',icon:svg('redo'),t:'Redo'}], D={act:'subDone',icon:svg('check'),t:'Done',cls:'green'};
+    b = [
+      {act:'alignL',icon:svg('alignL'),t:'Left',dis:none},{act:'alignH',icon:svg('alignH'),t:'Centre',dis:none},{act:'alignRt',icon:svg('alignRt'),t:'Right',dis:none},{act:'arrReset',icon:svg('reset'),t:'Reset',dis:none||(!el.rot&&!el.fx&&!el.fy&&isCentred(el))},
+      {act:'alignT',icon:svg('alignT'),t:'Top',dis:none},{act:'alignV',icon:svg('alignV'),t:'Middle',dis:none},{act:'alignB',icon:svg('alignB'),t:'Bottom',dis:none},{act:'straight',icon:svg('straight'),t:'Straighten',dis:none||!el.rot},
+      {act:'flipH',icon:svg('flipH'),t:'Flip horiz',led:el?!!el.fx:undefined,dis:none},{act:'flipV',icon:svg('flipV'),t:'Flip vert',led:el?!!el.fy:undefined,dis:none},{act:'rot90L',icon:svg('rot90L'),t:'Rotate 90°',dis:none},{act:'rot90R',icon:svg('rot90R'),t:'Rotate 90°',dis:none},
+      {act:'turnL',icon:svg('turnL'),t:'Turn',rep:1,dis:none},{act:'turnR',icon:svg('turnR'),t:'Turn',rep:1,dis:none},{act:'copy',icon:svg('copy'),t:'Copy',dis:none},D,
+    ];
+  } else if(S.maskMode){
     b=[
       {act:'mKeep',icon:svg('keep'),t:'Keep',led:S.mop==='keep'},{act:'mErase',icon:svg('erase'),t:'Erase',led:S.mop==='erase'},
       {act:'mInv',icon:svg('invert'),t:'Invert',led:!!el.minv},{act:'mGhost',icon:svg('eye'),t:'Ghost',led:!!S.ghost},
@@ -884,9 +1000,7 @@ function renderDesignPanel(){
       {act:'tRect',icon:svg('rect'),t:'Box',led:S.mtool==='rect'},{act:'tEllipse',icon:svg('ellipse'),t:'Oval',led:S.mtool==='ellipse'},
       {act:'brushD',icon:svg('minus'),t:'Smaller',rep:1},{act:'brushU',icon:svg('plus'),t:'Bigger',rep:1},
       {act:'mReset',icon:svg('reset'),t:'Reset',dis:!(el.masks&&el.masks.length)&&!el.minv},{act:'run',icon:svg('play'),t:'Run'},
-      {act:'undo',icon:svg('undo'),t:'Undo'},{act:'redo',icon:svg('redo'),t:'Redo'},
-      {act:'copy',icon:svg('copy'),t:'Copy'},{act:'mask',icon:svg('check'),t:'Done',cls:'green'},
-      {act:'paste',icon:svg('paste'),t:'Paste',cls:'col3'},
+      {gap:1},{gap:1},{gap:1},{act:'mask',icon:svg('check'),t:'Done',cls:'green'},
     ];
   } else {
     if(txt){
@@ -894,10 +1008,10 @@ function renderDesignPanel(){
         {act:'drum0',icon:chip(0,el.drum===0),t:inkName(0),led:el.drum===0},
         {act:'drum1',icon:chip(1,el.drum===1),t:inkName(1),led:el.drum===1},
         S.ink3?{act:'drum2',icon:chip(2,el.drum===2),t:inkName(2),led:el.drum===2}:{act:'run',icon:svg('play'),t:'Run'},
-        {act:'edit',icon:svg('pencil'),t:'Edit'},
+        {act:'turnL',icon:svg('turnL'),t:'Turn',rep:1},
         {act:'fontN',icon:'<span class="n" style="font:400 calc(var(--key-h)*.34) \''+FONTS[el.font][1]+'\'">Aa</span>',t:'Font'},
-        {act:'turnL',icon:svg('turnL'),t:'Turn',rep:1},{act:'turnR',icon:svg('turnR'),t:'Turn',rep:1},
         {act:'align',icon:svg(el.align==='left'?'align':el.align==='center'?'alignC':'alignR'),t:'Align'},
+        {act:'edit',icon:svg('pencil'),t:'Edit'},{act:'turnR',icon:svg('turnR'),t:'Turn',rep:1},
         {act:'sizeD',icon:svg('minus'),t:'Size',rep:1},{act:'sizeU',icon:svg('plus'),t:'Size',rep:1},
         {act:'darker',icon:svg('moon'),t:'Darker',rep:1,dis:TINT(el)>=1},{act:'lighter',icon:svg('sun'),t:'Lighter',rep:1,dis:TINT(el)<=.1},
       ];
@@ -915,8 +1029,8 @@ function renderDesignPanel(){
         {act:'darker',icon:svg('moon'),t:'Darker',rep:1,dis:none||TINT(el)>=1},{act:'lighter',icon:svg('sun'),t:'Lighter',rep:1,dis:none||TINT(el)<=.1},
       ];
     }
-    b.push({act:'addImg',icon:svg('image'),t:'+ Image'},{act:'addText',icon:svg('text'),t:'+ Text'},{act:'copy',icon:svg('copy'),t:'Copy',dis:none},{act:'panel',icon:svg('panel'),t:'Panel'},
-           {act:'paste',icon:svg('paste'),t:'Paste',cls:'col3'});
+    b.push({act:'arrange',icon:svg('alignL')+svg('flipH'),t:'Arrange',cls:'span2 arr'},{act:'copy',icon:svg('copy'),t:'Copy',dis:none},{act:'panel',icon:svg('panel'),t:'Panel'},
+           {act:'addImg',icon:svg('image'),t:'+ Image'},{act:'addText',icon:svg('text'),t:'+ Text'},{act:'paste',icon:svg('paste'),t:'Paste'},{gap:1});
   }
   $('#dgrid').innerHTML=b.map(btn).join('');
   const lk=$('#kLayer'); lk.disabled=none||S.els.length<2; lk.querySelector('.t').textContent=el&&isTop(el)?'Back':'Front';
@@ -926,22 +1040,28 @@ function renderDesignPanel(){
 const isTop = el => S.els[S.els.length-1]===el;
 function updateLCD(){
   const el=S.sel; let a,b;
-  if(!el){ a=S.els.length?'No selection':'Blank page'; b=S.els.length?`${S.els.length} item${S.els.length===1?'':'s'} · tap to select`:'+ image or + text to start'; }
+  if(!el && S.sub){ a='Nothing selected'; b='tap an item · done to finish'; }
+  else if(!el){ a=S.els.length?'No selection':'Blank page'; b=S.els.length?`${S.els.length} item${S.els.length===1?'':'s'} · tap to select`:'+ image or + text to start'; }
+  else if(S.sub){
+    const e=visExtents(el), f=v=>Math.round(v/100*25.4);   // page units → mm
+    a=`L ${f(el.x+e.l)}  T ${f(el.y+e.t)}  R ${f(W-(el.x+e.r))}  B ${f(H-(el.y+e.b))} mm`;
+    b=`${Math.round(el.rot)}°${el.fx?' · flipped H':''}${el.fy?' · flipped V':''}${!el.rot&&!el.fx&&!el.fy?' · not flipped':''}`;
+  }
   else if(S.maskMode){
     a=`Mask · ${S.mop} · ${{rect:'box',ellipse:'oval',brush:(S.msoft?'soft ':'')+'brush '+Math.round(S.brush*100)+'%'}[S.mtool]}`;
     const n=(el.masks||[]).length; b=`${n} shape${n===1?'':'s'}${el.minv?' · inverted':''} · draw on image`;
   }
   else if(el.type==='image'){
     a=`${Math.round(el.w/W*100)}% wide  ${Math.round(el.rot)}°`;
-    b=(el.mode===2?'Two color':inkName(el.mode===3?2:el.mode)+' only')+(el.cut?' · cut out':'')+((el.masks&&el.masks.length)||el.minv?' · mask':'')+` · ink ${Math.round(TINT(el)*100)}%`;
+    b=(el.mode===2?'Two color':inkName(el.mode===3?2:el.mode)+' only')+(el.cut?' · cut out':'')+((el.masks&&el.masks.length)||el.minv?' · mask':'')+` · ink ${Math.round(TINT(el)*100)}%`+(el.fx||el.fy?' · flipped':'');
   } else {
     a=`${Math.round(el.size*0.72)} pt  ${Math.round(el.rot)}°  ${el.align==='center'?'centered':el.align}`;
-    b=`${FONTS[el.font][0]} · ink ${Math.round(TINT(el)*100)}%`;
+    b=`${FONTS[el.font][0]} · ink ${Math.round(TINT(el)*100)}%${el.fx||el.fy?' · flipped':''}`;
   }
   $('#l1').textContent=a; $('#l2').textContent=b;
 }
 
-const MUT={delete:1,drum0:1,drum1:1,drum2:1,mode0:1,mode1:1,mode2:1,mode3:1,align:1,fontP:1,fontN:1,sizeD:1,sizeU:1,turnL:1,turnR:1,layer:1,cut:1,lighter:1,darker:1,copy:1,spacing:1,clear:1,mInv:1,mReset:1};
+const MUT={arrReset:1,rot90L:1,rot90R:1,straight:1,alignC:1,flipH:1,flipV:1,alignL:1,alignH:1,alignRt:1,alignT:1,alignV:1,alignB:1,delete:1,drum0:1,drum1:1,drum2:1,mode0:1,mode1:1,mode2:1,mode3:1,align:1,fontP:1,fontN:1,sizeD:1,sizeU:1,turnL:1,turnR:1,layer:1,cut:1,lighter:1,darker:1,copy:1,spacing:1,clear:1,mInv:1,mReset:1};
 function act(a, step=1){
   const el=S.sel;
   if(MUT[a]){
@@ -962,15 +1082,15 @@ function act(a, step=1){
     case 'fontN': el.font=(el.font+1)%FONTS.length; loadFont(el).then(renderDesign); break;
     case 'sizeD': scaleSel(1/1.04); return;
     case 'sizeU': scaleSel(1.04); return;
-    case 'turnL': el.rot=norm(el.rot-step); break;
-    case 'turnR': el.rot=norm(el.rot+step); break;
+    case 'turnL': aroundVis(el,()=>el.rot=norm(el.rot-step)); break;
+    case 'turnR': aroundVis(el,()=>el.rot=norm(el.rot+step)); break;
     case 'edit': if(el&&el.type==='text') openTextEdit(el); return;
     case 'layer': { const i=S.els.indexOf(el); S.els.splice(i,1); if(i===S.els.length) S.els.unshift(el); else S.els.push(el); break; }
     case 'cut': el.cut=!el.cut; showBusy(true); setTimeout(()=>{ buildImage(el); showBusy(false); renderDesignPanel(); renderDesign(); },20); return;
     // 10 ink stops: 100%, 90% … 10%
     case 'lighter': el.tint=Math.max(1,Math.round(TINT(el)*10)-1)/10; break;
     case 'darker': el.tint=Math.min(10,Math.round(TINT(el)*10)+1)/10; break;
-    case 'mask': if(!el||el.type!=='image') return; S.maskMode=!S.maskMode; S.draft=null; if(S.maskMode && !(el.masks&&el.masks.length)) toast('Draw on the image to mask it'); break;
+    case 'mask': if(!el||el.type!=='image') return; S.sub=null; S.maskMode=!S.maskMode; S.draft=null; if(S.maskMode && !(el.masks&&el.masks.length)) toast('Draw on the image to mask it'); break;
     case 'mKeep': S.mop='keep'; break;
     case 'mErase': S.mop='erase'; break;
     case 'mInv': el.minv=!el.minv; break;
@@ -988,6 +1108,21 @@ function act(a, step=1){
       S.els.push(t); select(t); loadFont(t).then(()=>{ renderDesign(); openTextEdit(t,true); }); return; }
     case 'copy': { const c=Object.assign({},el,{x:el.x+30,y:el.y+30}); S.els.push(c); select(c); return; }
     case 'paste': pasteImage(); return;
+    case 'arrange': S.maskMode=false; S.draft=null; S.sub='arrange'; break;
+    case 'subDone': S.sub=null; break;
+    case 'rot90L': aroundVis(el,()=>el.rot=norm(el.rot-90)); break;
+    case 'rot90R': aroundVis(el,()=>el.rot=norm(el.rot+90)); break;
+    case 'straight': aroundVis(el,()=>el.rot=0); break;
+    case 'arrReset': { el.rot=0; el.fx=false; el.fy=false; const e=visExtents(el); el.x=W/2-(e.l+e.r)/2; el.y=H/2-(e.t+e.b)/2; break; }   // undo turns, flips and alignment (back to the centre, where new items start)
+    case 'alignC': { const e=visExtents(el); el.x=W/2-(e.l+e.r)/2; el.y=H/2-(e.t+e.b)/2; break; }
+    case 'flipH': aroundVis(el,()=>el.fx=!el.fx); break;
+    case 'flipV': aroundVis(el,()=>el.fy=!el.fy); break;
+    case 'alignL': case 'alignH': case 'alignRt': case 'alignT': case 'alignV': case 'alignB': {
+      // line up what actually prints (the visible ink, after rotation) with the page
+      const e=visExtents(el);
+      if(a==='alignL') el.x=-e.l; if(a==='alignH') el.x=W/2-(e.l+e.r)/2; if(a==='alignRt') el.x=W-e.r;
+      if(a==='alignT') el.y=-e.t; if(a==='alignV') el.y=H/2-(e.t+e.b)/2; if(a==='alignB') el.y=H-e.b;
+      break; }
     case 'panel': setView('machine'); return;
   }
   renderDesignPanel(); renderDesign();
@@ -1113,6 +1248,7 @@ function setInk3(on){
   S.ink3=on; inksChanged(); renderReg();
 }
 function inksChanged(){
+  designChanged();
   for(const el of S.els) if(el.type==='image' && el.mode===2) buildImage(el);
   renderDrumDisp(); renderReg(); updateThumbSoon(); if(S.view==='design'){ renderDesignPanel(); renderDesign(); }
   if(S.view==='import' && imp){ if(imp.mode===3 && !S.ink3) imp.mode=1; renderImportPanel(); renderImport(); }
@@ -1141,7 +1277,7 @@ function openTextEdit(el, noCommit){
   const s=openSheet(`<div class="edit"><div class="shead">Edit text · new line = enter · line spacing below</div><textarea id="ta" spellcheck="false"></textarea><div class="sbtns tseg" id="taSp"><button class="sbtn" data-lh="0.88">TIGHT</button><button class="sbtn" data-lh="1.02">NORMAL</button><button class="sbtn" data-lh="1.22">LOOSE</button></div><div class="sbtns"><button class="sbtn" id="taCancel">CANCEL</button><button class="sbtn go" id="taDone">DONE</button></div></div>`);
   const ta=s.querySelector('#ta'); ta.value=el.text; ta.style.fontFamily=`"${FONTS[el.font][1]}"`; const orig=el.text;
   setTimeout(()=>{ ta.focus(); ta.select(); },30);
-  ta.oninput=()=>{ el.text=ta.value||' '; renderDesign(); };
+  ta.oninput=()=>{ el.text=ta.value||' '; designChanged(); renderDesign(); };
   const markSp=()=>s.querySelectorAll('[data-lh]').forEach(b=>b.classList.toggle('go',Math.abs(+b.dataset.lh-el.lh)<.05));
   markSp(); s.querySelector('#taSp').onclick=e=>{ const b=e.target.closest('[data-lh]'); if(!b) return; el.lh=+b.dataset.lh; markSp(); renderDesign(); ta.focus(); };
   s.querySelector('#taDone').onclick=closeSheet;
@@ -1151,7 +1287,7 @@ function openTextEdit(el, noCommit){
 /* ---------------- machine panel ---------------- */
 const SEGS={a:[4,0,14,4],b:[18,3,4,15],c:[18,20,4,15],d:[4,34,14,4],e:[0,20,4,15],f:[0,3,4,15],g:[4,17,14,4]};
 const DIG=['abcdef','bc','abged','abgcd','fgbc','afgcd','afgedc','abc','abcdefg','abcdfg'];
-function renderSeg(n){
+function renderSeg(n){ scheduleSave();
   const s=String(n).padStart(3,' ').slice(-3); let out='';
   for(let i=0;i<3;i++){
     const ch=s[i], on=ch===' '?'':DIG[+ch], ox=i*27;
@@ -1159,14 +1295,14 @@ function renderSeg(n){
   }
   $('#seg').innerHTML=`<svg viewBox="-3 -1 84 40"><g transform="skewX(-6)" style="filter:drop-shadow(0 0 2px #ff2d1f88)">${out}</g></svg>`;
 }
-function renderDrumDisp(){
+function renderDrumDisp(){ scheduleSave();
   const it=d=>`<span class="dd"><span class="n">${d+1}</span><i style="background:${inkHex(d)}"></i><span class="nm">${inkName(d)}</span></span>`;
   $('#drumDisp').classList.toggle('three',S.ink3);
   $('#drumDisp').innerHTML = S.ink3 ? `<span class="row">${it(0)}${it(1)}</span><span class="row"><span class="pass">Pass 2</span>${it(2)}</span>` : `${it(0)}<span class="sep"></span>${it(1)}`;
   $('#pk1dot') && 0;
 }
-function renderPaperIcon(){ const p=PAPERS[S.paper]; $('#paperIcon').style.fill=p[1]||'#e4e4e4'; }
-function renderReg(){
+function renderPaperIcon(){ designChanged(); const p=PAPERS[S.paper]; $('#paperIcon').style.fill=p[1]||'#e4e4e4'; }
+function renderReg(){ scheduleSave();
   const f=v=>(v>0?'+':v<0?'-':' ')+Math.abs(v).toFixed(1);
   if(!S.ink3) S.regD=1;
   const r=S.regs[S.regD];
@@ -1191,7 +1327,7 @@ $('#bStop').onclick=()=>{ if(S.printing){ S.stop=true; toast('Stopped'); } };
 
 // knobs
 const KN={speed:'speed',density:'density'};
-function renderKnobs(){
+function renderKnobs(){ scheduleSave();
   document.querySelectorAll('.knobw').forEach(w=>{
     const k=w.dataset.k, v=S[k], cap=w.querySelector('.cap'), kn=w.querySelector('.knob');
     cap.style.transform=`rotate(${-120+(v-1)*60}deg)`;
@@ -1207,7 +1343,7 @@ document.querySelectorAll('.knobw').forEach(w=>{
 
 /* ---------------- views ---------------- */
 function setView(v){
-  closeSheet(); S.view=v; S.maskMode=false; S.draft=null;
+  closeSheet(); S.view=v; S.maskMode=false; S.sub=null; S.draft=null;
   $('#trayHint').innerHTML = S.els.length ? 'Tray empty<br>key in copies · press start' : 'Blank page<br>press design to start';
   $('#tray').classList.toggle('hidden',v!=='machine');
   $('#designView').classList.toggle('hidden',v!=='design');
@@ -1336,6 +1472,7 @@ function start(){ if(S.printing) return; runPrint(S.copies||1,false); }
 async function runPrint(n, proof){
   if(!S.els.length){ toast('Nothing to print · press design'); return; }
   closeSheet(); S.printing=true; S.stop=false;
+  if(!proof){ SAVE.printed=true; clearSaved(); }
   await Promise.all(S.els.filter(e=>e.type==='text').map(loadFont)); await TEX.ready;
   const gap=[1350,1000,760,560,420][S.speed-1];
   for(let k=0;k<n && !S.stop;k++){
@@ -1384,17 +1521,17 @@ $('#vClear').onclick=()=>{ S.tray.forEach(t=>URL.revokeObjectURL(t.url)); S.tray
 $('#vSave').onclick=async()=>{
   const t=S.tray[S.vi]; if(!t) return;
   const name=`riso-${[0,1,2].slice(0,nInks()).map(inkName).join('-')}-${S.vi+1}.png`.toLowerCase().replace(/\s+/g,'-');
-  await saveFile(t.blob,name);
+  if(await saveFile(t.blob,name)) SAVE.savedPrints.add(t.url);
 };
 async function saveFile(blob,name){
   try{
     if(window.claude && typeof window.claude.use==='function'){
       const dl=await window.claude.use('downloads');
-      if(dl){ try{ await dl.save({filename:name,data:blob}); toast('Saved'); }catch(e){ if(e&&e.code!=='declined') toast('Save not available here'); } return; }
+      if(dl){ try{ await dl.save({filename:name,data:blob}); toast('Saved'); return true; }catch(e){ if(e&&e.code!=='declined') toast('Save not available here'); return false; } }
     }
   }catch(e){}
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(a.href),4000); toast('Saved');
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000); toast('Saved'); return true;
 }
 
 /* ---------------- import ---------------- */
@@ -1495,6 +1632,7 @@ document.addEventListener('keydown',e=>{
     if(mod && kl==='y'){ e.preventDefault(); redo(); return; }
     if(mod && k==='Enter'){ e.preventDefault(); act('run'); return; }
     const el=S.sel;
+    if(S.sub && (k==='Escape'||k==='Enter')){ e.preventDefault(); act('subDone'); return; }
     if(S.maskMode){
       const m={k:'mKeep',e:'mErase',s:'mSoft',r:'tRect',o:'tEllipse',b:'tBrush',x:'mInv',g:'mGhost','[':'brushD',']':'brushU'}[kl];
       if(m && !mod){ e.preventDefault(); act(m); }
@@ -1508,6 +1646,8 @@ document.addEventListener('keydown',e=>{
       else if(mod && e.shiftKey && (k==='Backspace'||k==='Delete')){ e.preventDefault(); act('clear'); }
       return;
     }
+    if(e.altKey && !mod){ const m={KeyA:'alignL',KeyH:'alignH',KeyD:'alignRt',KeyW:'alignT',KeyV:'alignV',KeyS:'alignB'}[e.code]; if(m){ e.preventDefault(); act(m); return; } }
+    if(e.shiftKey && !mod && !e.altKey && (e.code==='KeyH'||e.code==='KeyV')){ e.preventDefault(); act(e.code==='KeyH'?'flipH':'flipV'); return; }
     const st=e.shiftKey?10:2;
     const mv=(dx,dy)=>{ e.preventDefault(); commit('move'+S.els.indexOf(el)); el.x+=dx; el.y+=dy; renderDesign(); };
     if(mod && e.shiftKey && (k==='Backspace'||k==='Delete')){ e.preventDefault(); act('clear'); }
@@ -1560,11 +1700,63 @@ function loadFont(el){
   return loaded[k]=(document.fonts? document.fonts.load(`${f[2]} 40px "${f[1]}"`).catch(()=>{}) : Promise.resolve());
 }
 
+/* ---------------- autosave ----------------
+   A design that hasn't been printed yet is kept in this browser (IndexedDB) and comes back on reload.
+   Pressing Start counts as finishing it: the saved copy is cleared. Changing the design afterwards
+   makes it unprinted again, so it's saved again. Printed copies aren't kept (they're large), so
+   leaving with unsaved prints in the tray asks first. */
+const SAVE={db:null, t:0, ready:false, printed:false, blobs:new WeakMap(), savedPrints:new Set()};
+function designChanged(){ SAVE.printed=false; scheduleSave(); }
+async function clearSaved(){ clearTimeout(SAVE.t); if(SAVE.db) await kvPut('state',null); }
+function idb(){
+  return new Promise(res=>{
+    try{ const r=indexedDB.open('two-drum-press',1); r.onupgradeneeded=()=>r.result.createObjectStore('kv'); r.onsuccess=()=>res(r.result); r.onerror=()=>res(null); }
+    catch(_){ res(null); }
+  });
+}
+const kvPut=(k,v)=>new Promise(res=>{ try{ const tx=SAVE.db.transaction('kv','readwrite'); tx.objectStore('kv').put(v,k); tx.oncomplete=()=>res(true); tx.onerror=()=>res(false); }catch(_){ res(false); } });
+const kvGet=k=>new Promise(res=>{ try{ const r=SAVE.db.transaction('kv').objectStore('kv').get(k); r.onsuccess=()=>res(r.result); r.onerror=()=>res(null); }catch(_){ res(null); } });
+async function canvasBlob(c){ if(!SAVE.blobs.has(c)) SAVE.blobs.set(c, await new Promise(r=>c.toBlob(r,'image/png'))); return SAVE.blobs.get(c); }
+function scheduleSave(){ if(!SAVE.ready) return; clearTimeout(SAVE.t); SAVE.t=setTimeout(saveNow,700); }
+async function saveNow(){
+  if(!SAVE.db || SAVE.printed) return;
+  const els=[];
+  for(const el of S.els){
+    if(el.type==='text'){ const {type,text,font,size,align,drum,x,y,rot,lh,tint,fx,fy}=el; els.push({type,text,font,size,align,drum,x,y,rot,lh,tint,fx,fy}); }
+    else { const {type,mode,cut,tol,gamma,inv,tint,x,y,rot,w,masks,minv,fx,fy}=el; els.push({type,orig:await canvasBlob(el.orig),mode,cut,tol,gamma,inv,tint,x,y,rot,w,masks:masks||[],minv,fx,fy}); }
+  }
+  await kvPut('state',{v:1, els, ink:S.ink.slice(), ink3:S.ink3, paper:S.paper, tex:S.tex, texK:S.texK, speed:S.speed, density:S.density, regs:JSON.parse(JSON.stringify(S.regs)), copies:S.copies});
+}
+async function restoreSaved(){
+  SAVE.db=await idb();
+  const st=SAVE.db && await kvGet('state');
+  if(st && st.v===1){
+    Object.assign(S,{ink:st.ink, ink3:!!st.ink3, paper:st.paper, tex:st.tex, texK:st.texK, speed:st.speed, density:st.density, regs:st.regs, copies:st.copies||0});
+    const els=[];
+    for(const o of st.els||[]){
+      if(o.type==='text'){ els.push(o); continue; }
+      try{
+        const bmp=await createImageBitmap(o.orig), c=mk(bmp.width,bmp.height); ctx2(c).drawImage(bmp,0,0); SAVE.blobs.set(c,o.orig);
+        const el={...o, orig:c}; buildImage(el); els.push(el);
+      }catch(_){}
+    }
+    S.els=els;
+    await Promise.all(S.els.filter(e=>e.type==='text').map(loadFont));
+    renderSeg(S.copies); renderDrumDisp(); renderPaperIcon(); renderReg(); renderKnobs(); setView('machine'); updateThumb();
+    if(els.length) toast('Restored your last design');
+  }
+  SAVE.ready=true;
+}
+window.addEventListener('beforeunload',e=>{
+  if(S.tray.some(t=>!SAVE.savedPrints.has(t.url))){ e.preventDefault(); e.returnValue=''; }
+});
+
 /* ---------------- boot ---------------- */
 setView('machine'); renderSeg(0); renderDrumDisp(); renderPaperIcon(); renderReg(); renderKnobs();
 Promise.all(S.els.filter(e=>e.type==='text').map(loadFont)).then(()=>{ updateThumb(); renderDesign(); });
 if(document.fonts) document.fonts.ready.then(()=>{ updateThumb(); renderDesign(); });
 updateThumb();
+restoreSaved();
 })();
 </script>
 </body>
